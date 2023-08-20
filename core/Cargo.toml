@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 reqwest.workspace = true
+scraper = "0.17.1"
 serde.workspace = true
 serde_derive.workspace = true
 thiserror.workspace = true
