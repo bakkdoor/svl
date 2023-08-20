@@ -3,12 +3,11 @@
 [workspace]
 members = ["cli", "core"]
 
-# [workspace.package]
-# version = "0.2.8"
-# edition = "2021"
-# rust-version = "1.64"
-# homepage = "https://github.com/bakkdoor/statistica-verborum-latina"
-# authors = ["Christopher Bertels <bakkdoor@flasht.de>"]
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+homepage = "https://github.com/bakkdoor/statistica-verborum-latina"
+authors = ["Christopher Bertels <bakkdoor@flasht.de>"]
 
 [workspace.dependencies]
 anyhow = "*"
