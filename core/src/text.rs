@@ -34,6 +34,12 @@ impl Text {
     }
 }
 
+impl<Url: ToString, Txt: ToString> From<(Url, Txt)> for Text {
+    fn from((url, text): (Url, Txt)) -> Self {
+        Self::new(url.to_string(), text.to_string())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Word(String);
 
