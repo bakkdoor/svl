@@ -26,8 +26,9 @@ impl Stats {
         }
     }
 
-    pub fn add_text(&mut self, text: Text) {
+    pub fn add_text(&mut self, text: &mut Text) {
         let id = TextId::from(self.texts.len() + 1);
+        text.set_id(id);
         self.texts.push(text.clone());
         for word in text.words() {
             self.add_word(id, word);

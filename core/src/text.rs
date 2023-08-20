@@ -25,6 +25,10 @@ impl Text {
         }
     }
 
+    pub fn set_id(&mut self, id: TextId) {
+        self.id = Some(id);
+    }
+
     pub fn words(&self) -> impl Iterator<Item = Word> + '_ {
         self.text.split_whitespace().map(|s| s.into())
     }
