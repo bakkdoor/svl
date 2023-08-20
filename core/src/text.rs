@@ -45,26 +45,20 @@ impl Text {
 
     pub fn trim_latin_word(word: &str) -> Option<Word> {
         let trimmed = word.trim();
-        let trimmed = trimmed.replace("<p>", "").replace("</p>", "");
-        let trimmed = trimmed.replace(
-            &[
-                '(', ')', '{', '}', '<', '>', '/', '+', '-', '*', ',', '·', '\'', '\"', '.', ';',
-                ':', '\'',
-            ][..],
-            "",
-        );
-
         if trimmed.is_empty() {
             return None;
         }
 
-        let mut char = trimmed.chars().next();
-        while char.is_some() {
-            if !char.unwrap().is_alphabetic() {
-                return None;
-            }
-            char = trimmed.chars().next();
-        }
+        // remove all non-alphabetic characters
+        let trimmed = trimmed
+            .chars()
+            .filter(|c| c.is_alphabetic())
+            .collect::<String>();
+
+        let trimmed = scraper::Html::parse_fragment(&trimmed)
+            .root_element()
+            .text()
+            .collect::<String>();
 
         Some(Word(trimmed))
     }
