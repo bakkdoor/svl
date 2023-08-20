@@ -10,10 +10,10 @@ use crate::text::{Text, TextId, Word};
 // - the (number of) words found in all texts
 // - the (number of) unique words found in all texts
 pub struct Stats {
-    pub texts: Vec<Text>,
-    pub word_count: usize,
-    pub unique_word_count: usize,
-    pub words: HashMap<Word, WordStats>,
+    texts: Vec<Text>,
+    word_count: usize,
+    unique_word_count: usize,
+    words: HashMap<Word, WordStats>,
 }
 
 impl Stats {
@@ -56,9 +56,9 @@ impl Default for Stats {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WordStats {
-    pub text_ids: HashSet<TextId>,
-    pub word: Word,
-    pub count: usize,
+    text_ids: HashSet<TextId>,
+    word: Word,
+    count: usize,
 }
 
 impl WordStats {
