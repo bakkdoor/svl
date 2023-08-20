@@ -37,18 +37,19 @@ impl Stats {
     }
 
     pub fn add_text(&mut self, url: &str, text: &str) {
-        self.texts.push(Text::new(url.into(), text.into()));
+        let id = TextId::from(self.texts.len() + 1);
+        self.texts.push(Text::new(id, url.into(), text.into()));
         for word in text.split_whitespace() {
-            self.add_word(word.into());
+            self.add_word(id, word.into());
         }
     }
 
-    pub fn add_word(&mut self, word: Word) {
+    pub fn add_word(&mut self, text_id: TextId, word: Word) {
         self.word_count += 1;
         let word_stats = self
             .words
             .entry(word.clone())
-            .or_insert_with(|| WordStats::new(self.texts.len(), word));
+            .or_insert_with(|| WordStats::new(text_id, word));
         word_stats.count += 1;
         if word_stats.count == 1 {
             self.unique_word_count += 1;
@@ -56,15 +57,25 @@ impl Stats {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct TextId(usize);
+
+impl From<usize> for TextId {
+    fn from(idx: usize) -> Self {
+        Self(idx)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Text {
+    pub id: TextId,
     pub url: String,
     pub text: String,
 }
 
 impl Text {
-    pub fn new(url: String, text: String) -> Self {
-        Self { url, text }
+    pub fn new(id: TextId, url: String, text: String) -> Self {
+        Self { id, url, text }
     }
 
     pub fn words(&self) -> impl Iterator<Item = Word> + '_ {
@@ -74,15 +85,15 @@ impl Text {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WordStats {
-    pub text_indices: HashSet<usize>,
+    pub text_ids: HashSet<TextId>,
     pub word: Word,
     pub count: usize,
 }
 
 impl WordStats {
-    pub fn new(text_index: usize, word: Word) -> Self {
+    pub fn new(text_id: TextId, word: Word) -> Self {
         Self {
-            text_indices: HashSet::from_iter(vec![text_index]),
+            text_ids: HashSet::from_iter(vec![text_id]),
             word,
             count: 0,
         }
