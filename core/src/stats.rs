@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -45,7 +48,7 @@ impl Stats {
         let word_stats = self
             .words
             .entry(word.clone())
-            .or_insert_with(|| WordStats { word, count: 0 });
+            .or_insert_with(|| WordStats::new(self.texts.len(), word));
         word_stats.count += 1;
         if word_stats.count == 1 {
             self.unique_word_count += 1;
@@ -71,8 +74,19 @@ impl Text {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WordStats {
+    pub text_indices: HashSet<usize>,
     pub word: Word,
     pub count: usize,
+}
+
+impl WordStats {
+    pub fn new(text_index: usize, word: Word) -> Self {
+        Self {
+            text_indices: HashSet::from_iter(vec![text_index]),
+            word,
+            count: 0,
+        }
+    }
 }
 
 pub struct HttpStatsClient {
