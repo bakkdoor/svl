@@ -1,0 +1,19 @@
+# # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = ["cli", "core"]
+
+# [workspace.package]
+# version = "0.2.8"
+# edition = "2021"
+# rust-version = "1.64"
+# homepage = "https://github.com/bakkdoor/statistica-verborum-latina"
+# authors = ["Christopher Bertels <bakkdoor@flasht.de>"]
+
+[workspace.dependencies]
+anyhow = "*"
+chrono = "*"
+regex = "*"
+serde = "*"
+serde_json = "*"
+thiserror = "*"
