@@ -70,3 +70,24 @@ impl WordStats {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add_text() {
+        let mut stats = Stats::new();
+        let mut text = Text::new("URL".into(), "hello world test text".into());
+        stats.add_text(&mut text);
+
+        assert_eq!(stats.texts.len(), 1);
+        assert_eq!(stats.word_count, 4);
+        assert_eq!(stats.unique_word_count, 4);
+        assert_eq!(stats.words.len(), 4);
+        assert_eq!(stats.words.get(&"hello".into()).unwrap().count, 1);
+        assert_eq!(stats.words.get(&"world".into()).unwrap().count, 1);
+        assert_eq!(stats.words.get(&"test".into()).unwrap().count, 1);
+        assert_eq!(stats.words.get(&"text".into()).unwrap().count, 1);
+    }
+}
