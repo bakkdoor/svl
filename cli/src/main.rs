@@ -1,6 +1,11 @@
-use svl_core::add;
+use std::error::Error;
+use svl_core::{client::HttpStatsClient, stats::Stats};
 
-fn main() {
-    println!("Hello, world!");
-    println!("40 + 2 = {}", add(40, 2));
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let mut stats = Stats::new();
+    let client = HttpStatsClient::new()?;
+    let text = client.fetch_text("https://thelatinlibrary.com/").await?;
+    stats.add_text(text);
+    Ok(())
 }

@@ -10,3 +10,4 @@ edition = "2021"
 svl-core = { path = "../core" }
 clap = "*"
 thiserror.workspace = true
+tokio.workspace = true

@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::collections::{HashMap, HashSet};
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -36,10 +33,10 @@ impl Stats {
         }
     }
 
-    pub fn add_text(&mut self, url: &str, text: &str) {
+    pub fn add_text(&mut self, text: Text) {
         let id = TextId::from(self.texts.len() + 1);
-        self.texts.push(Text::new(id, url.into(), text.into()));
-        for word in text.split_whitespace() {
+        self.texts.push(text.clone());
+        for word in text.words() {
             self.add_word(id, word.into());
         }
     }
@@ -68,14 +65,18 @@ impl From<usize> for TextId {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Text {
-    pub id: TextId,
+    pub id: Option<TextId>,
     pub url: String,
     pub text: String,
 }
 
 impl Text {
-    pub fn new(id: TextId, url: String, text: String) -> Self {
-        Self { id, url, text }
+    pub fn new(url: String, text: String) -> Self {
+        Self {
+            id: None,
+            url,
+            text,
+        }
     }
 
     pub fn words(&self) -> impl Iterator<Item = Word> + '_ {
@@ -97,29 +98,5 @@ impl WordStats {
             word,
             count: 0,
         }
-    }
-}
-
-pub struct HttpStatsClient {
-    client: reqwest::Client,
-    semaphore: Arc<tokio::sync::Semaphore>,
-}
-
-impl HttpStatsClient {
-    const MAX_CONCURRENT_REQUESTS: usize = 10;
-
-    pub fn new() -> crate::Result<Self> {
-        let client = reqwest::Client::builder().https_only(true).build()?;
-        // allow max of MAX_CONCURRENT_REQUESTS concurrent requests using this http client pool
-        let semaphore = Arc::new(tokio::sync::Semaphore::new(Self::MAX_CONCURRENT_REQUESTS));
-
-        Ok(Self { client, semaphore })
-    }
-
-    pub async fn fetch_text(&self, text_url: &str) -> crate::Result<String> {
-        let permit = self.semaphore.acquire().await?;
-        let text = self.client.get(text_url).send().await?.text().await?;
-        drop(permit);
-        Ok(text)
     }
 }
