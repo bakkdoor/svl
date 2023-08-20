@@ -31,19 +31,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for author in &authors {
         print!("{}", author.name);
         if !author.texts.is_empty() {
-            print!(" | {} texts", author.texts.len());
+            print!("\n  {} 📕", author.texts.len());
         }
         println!();
     }
+
     println!();
+    println!();
+
+    let mut text_futures = Vec::with_capacity(authors.len());
 
     for author in &authors {
         for text_info in &author.texts {
-            println!("Processing {}: {}", author.name, text_info.name);
-
-            let mut text = client.fetch_text(&text_info.url).await?;
-            stats.add_text(&mut text);
+            println!("Fetching {}", text_info.url);
+            text_futures.push(client.fetch_text(&text_info.url));
         }
+    }
+
+    for tf in text_futures {
+        let mut text = tf.await?;
+        stats.add_text(&mut text);
     }
 
     println!("Final stats: {}", stats);

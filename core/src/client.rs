@@ -57,8 +57,7 @@ impl HttpStatsClient {
     }
 
     pub async fn get_texts(&self, author_info: &AuthorInfo) -> crate::Result<Vec<TextInfo>> {
-        println!("Fetching text list for {}", author_info.name);
-        let _permit = self.semaphore.acquire().await?;
+        let permit = self.semaphore.acquire().await?;
         let html_text = self
             .client
             .get(author_info.url.clone())
@@ -66,6 +65,7 @@ impl HttpStatsClient {
             .await?
             .text()
             .await?;
+        drop(permit);
 
         let html = scraper::Html::parse_document(&html_text);
         let mut books = Vec::new();
