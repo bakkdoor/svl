@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
+};
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -28,6 +31,7 @@ impl Stats {
 
     pub fn add_text(&mut self, text: &mut Text) {
         let id = TextId::from(self.texts.len() + 1);
+        println!("Processing Text {}: {}", id, text.url);
         text.set_id(id);
         self.texts.push(text.clone());
         for word in text.words() {
@@ -51,6 +55,21 @@ impl Stats {
 impl Default for Stats {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Display for Stats {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Total words: {}", self.word_count)?;
+        writeln!(f, "Unique words: {}", self.unique_word_count)?;
+        writeln!(f, "Texts: {}", self.texts.len())?;
+        if std::env::var("SHOW_WORDS").is_ok() {
+            writeln!(f, "Words:")?;
+            for (word, stats) in &self.words {
+                writeln!(f, "{}: {}", word.to_string(), stats.count)?;
+            }
+        }
+        Ok(())
     }
 }
 

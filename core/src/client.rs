@@ -11,7 +11,8 @@ pub struct HttpStatsClient {
 }
 
 impl HttpStatsClient {
-    const MAX_CONCURRENT_REQUESTS: usize = 10;
+    const BASE_URL: &'static str = "https://thelatinlibrary.com/";
+    const MAX_CONCURRENT_REQUESTS: usize = 25;
 
     pub fn new() -> crate::Result<Self> {
         let client = reqwest::Client::builder().https_only(true).build()?;
@@ -30,42 +31,65 @@ impl HttpStatsClient {
 
     pub async fn get_authors(&self) -> crate::Result<Vec<AuthorInfo>> {
         let _permit = self.semaphore.acquire().await?;
-        let html_text = self
-            .client
-            .get("https://thelatinlibrary.com/")
-            .send()
-            .await?
-            .text()
-            .await?;
-
-        // // parse html and find tag
-        // // <select name="dest" ..>
+        let html_text = self.client.get(Self::BASE_URL).send().await?.text().await?;
 
         let html = scraper::Html::parse_document(&html_text);
         let mut authors = Vec::new();
 
-        // get all form select options for the form with name "myform" and select with name "dest"
         let selector =
             scraper::Selector::parse("form[name=myform] select[name=dest] option").unwrap();
 
         for author in html.select(&selector) {
-            // option looks like this:
             // <option value="$URL">$NAME</option>
             let author_info = AuthorInfo {
                 name: author.inner_html().trim().into(),
-                url: author
-                    .value()
-                    .attr("value")
-                    .unwrap()
-                    .to_string()
-                    .trim()
-                    .into(),
+                url: Self::path_to_url(
+                    author
+                        .value()
+                        .attr("value")
+                        .unwrap()
+                        .to_string()
+                        .trim()
+                        .into(),
+                ),
                 texts: Vec::new(),
             };
             authors.push(author_info);
         }
 
         Ok(authors)
+    }
+
+    pub fn path_to_url(path: &str) -> String {
+        format!("{}{}", Self::BASE_URL, path)
+    }
+
+    pub async fn get_texts(&self, author_info: &AuthorInfo) -> crate::Result<Vec<TextInfo>> {
+        let _permit = self.semaphore.acquire().await?;
+        let html_text = self
+            .client
+            .get(author_info.url.clone())
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        let html = scraper::Html::parse_document(&html_text);
+        let mut books = Vec::new();
+
+        let selector = scraper::Selector::parse("div.work table tr td a").unwrap();
+
+        for book in html.select(&selector) {
+            let book_info = TextInfo {
+                name: book.inner_html().trim().into(),
+                url: Self::path_to_url(
+                    book.value().attr("href").unwrap().to_string().trim().into(),
+                ),
+            };
+            books.push(book_info);
+        }
+
+        Ok(books)
     }
 }
 

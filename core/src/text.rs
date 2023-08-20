@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -6,6 +8,12 @@ pub struct TextId(usize);
 impl From<usize> for TextId {
     fn from(idx: usize) -> Self {
         Self(idx)
+    }
+}
+
+impl Display for TextId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "#{}", self.0)
     }
 }
 
@@ -30,7 +38,33 @@ impl Text {
     }
 
     pub fn words(&self) -> impl Iterator<Item = Word> + '_ {
-        self.text.split_whitespace().map(|s| s.into())
+        self.text
+            .split_whitespace()
+            .filter_map(|s| Self::trim_latin_word(s))
+    }
+
+    pub fn trim_latin_word(word: &str) -> Option<Word> {
+        let trimmed = word.clone().trim();
+        let trimmed = trimmed.replace("<p>", "").replace("</p>", "");
+        let trimmed = trimmed.replace(
+            &[
+                '(', ')', '{', '}', '<', '>', '/', '+', '-', '*', ',', '·', '\'', '\"', '.', ';',
+                ':', '\'',
+            ][..],
+            "",
+        );
+
+        let char = trimmed.chars().nth(0);
+        if trimmed.is_empty() || char.is_none() || char.is_some() && !char.unwrap().is_alphabetic()
+        {
+            return None;
+        }
+
+        Some(Word(trimmed))
+    }
+
+    pub fn is_latin_word(word: &Word) -> bool {
+        word.0.chars().all(|c| c.is_alphabetic())
     }
 }
 
@@ -43,8 +77,14 @@ impl<Url: ToString, Txt: ToString> From<(Url, Txt)> for Text {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Word(String);
 
-impl<S: ToString> From<S> for Word {
-    fn from(s: S) -> Self {
-        Self(s.to_string())
+impl Word {
+    pub fn to_string(&self) -> String {
+        self.0.clone()
+    }
+}
+
+impl From<&str> for Word {
+    fn from(s: &str) -> Self {
+        Self(s.into())
     }
 }
