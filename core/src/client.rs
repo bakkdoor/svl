@@ -43,7 +43,7 @@ impl HttpStatsClient {
             // <option value="$URL">$NAME</option>
             let author_info = AuthorInfo {
                 name: author.inner_html().trim().into(),
-                url: Self::path_to_url(author.value().attr("value").unwrap().trim()),
+                url: Self::path_to_url(author.value().attr("value").unwrap()),
                 texts: Vec::new(),
             };
             authors.push(author_info);
@@ -53,7 +53,7 @@ impl HttpStatsClient {
     }
 
     pub fn path_to_url(path: &str) -> String {
-        format!("{}{}", Self::BASE_URL, path)
+        format!("{}{}", Self::BASE_URL, path.trim())
     }
 
     pub async fn get_texts(&self, author_info: &AuthorInfo) -> crate::Result<Vec<TextInfo>> {
