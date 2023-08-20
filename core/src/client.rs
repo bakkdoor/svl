@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::stats::Text;
+use crate::text::Text;
 
 #[derive(Debug)]
 pub struct HttpStatsClient {
