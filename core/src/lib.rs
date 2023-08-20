@@ -8,6 +8,8 @@ pub enum SVLError {
     IOError(#[from] std::io::Error),
     #[error("Invalid state")]
     InvalidState,
+    #[error("Unknown error: {0:?}")]
+    Unknown(Option<String>)
 }
 
 pub fn add(left: usize, right: usize) -> usize {
