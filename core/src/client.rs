@@ -32,23 +32,39 @@ impl HttpStatsClient {
         let _permit = self.semaphore.acquire().await?;
         let html_text = self
             .client
-            .get("https://latin-texts.herokuapp.com/")
+            .get("https://thelatinlibrary.com/")
             .send()
             .await?
             .text()
             .await?;
-        // parse html and find tag
-        // <select name="dest" ..>
+
+        // // parse html and find tag
+        // // <select name="dest" ..>
+
         let html = scraper::Html::parse_document(&html_text);
         let mut authors = Vec::new();
-        for author in html.select(&scraper::Selector::parse("select[name=dest]").unwrap()) {
-            println!("{:?}", author);
-            authors.push(AuthorInfo {
-                name: author.value().attr("value").unwrap().into(),
-                url: author.value().attr("value").unwrap().into(),
+
+        // get all form select options for the form with name "myform" and select with name "dest"
+        let selector =
+            scraper::Selector::parse("form[name=myform] select[name=dest] option").unwrap();
+
+        for author in html.select(&selector) {
+            // option looks like this:
+            // <option value="$URL">$NAME</option>
+            let author_info = AuthorInfo {
+                name: author.inner_html().trim().into(),
+                url: author
+                    .value()
+                    .attr("value")
+                    .unwrap()
+                    .to_string()
+                    .trim()
+                    .into(),
                 texts: Vec::new(),
-            });
+            };
+            authors.push(author_info);
         }
+
         Ok(authors)
     }
 }
