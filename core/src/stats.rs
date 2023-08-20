@@ -30,7 +30,7 @@ impl Stats {
         let id = TextId::from(self.texts.len() + 1);
         self.texts.push(text.clone());
         for word in text.words() {
-            self.add_word(id, word.into());
+            self.add_word(id, word);
         }
     }
 
@@ -44,6 +44,12 @@ impl Stats {
         if word_stats.count == 1 {
             self.unique_word_count += 1;
         }
+    }
+}
+
+impl Default for Stats {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
