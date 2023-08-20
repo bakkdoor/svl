@@ -14,13 +14,11 @@ impl<S: ToString> From<S> for Word {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 // Stats about Latin words found in various texts
 // keeps track of:
-// - the (number of) words found in each text
-// - the (number of) unique words found in each text
-// - the (number of) words found in each text that are not found in the other texts
+// - the (number of) words found in all texts
+// - the (number of) unique words found in all texts
 pub struct Stats {
     pub word_count: usize,
     pub unique_word_count: usize,
-    pub unique_words_not_in_other_texts_count: usize,
     pub words: HashMap<Word, WordStats>,
 }
 
@@ -29,8 +27,19 @@ impl Stats {
         Stats {
             word_count: 0,
             unique_word_count: 0,
-            unique_words_not_in_other_texts_count: 0,
             words: HashMap::new(),
+        }
+    }
+
+    pub fn add_word(&mut self, word: Word) {
+        self.word_count += 1;
+        let word_stats = self
+            .words
+            .entry(word.clone())
+            .or_insert_with(|| WordStats { word, count: 0 });
+        word_stats.count += 1;
+        if word_stats.count == 1 {
+            self.unique_word_count += 1;
         }
     }
 }
