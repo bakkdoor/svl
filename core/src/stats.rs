@@ -17,6 +17,7 @@ impl<S: ToString> From<S> for Word {
 // - the (number of) words found in all texts
 // - the (number of) unique words found in all texts
 pub struct Stats {
+    pub texts: Vec<Text>,
     pub word_count: usize,
     pub unique_word_count: usize,
     pub words: HashMap<Word, WordStats>,
@@ -25,9 +26,17 @@ pub struct Stats {
 impl Stats {
     pub fn new() -> Self {
         Stats {
+            texts: Vec::new(),
             word_count: 0,
             unique_word_count: 0,
             words: HashMap::new(),
+        }
+    }
+
+    pub fn add_text(&mut self, url: &str, text: &str) {
+        self.texts.push(Text::new(url.into(), text.into()));
+        for word in text.split_whitespace() {
+            self.add_word(word.into());
         }
     }
 
@@ -41,6 +50,22 @@ impl Stats {
         if word_stats.count == 1 {
             self.unique_word_count += 1;
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Text {
+    pub url: String,
+    pub text: String,
+}
+
+impl Text {
+    pub fn new(url: String, text: String) -> Self {
+        Self { url, text }
+    }
+
+    pub fn words(&self) -> impl Iterator<Item = Word> + '_ {
+        self.text.split_whitespace().map(|s| s.into())
     }
 }
 
