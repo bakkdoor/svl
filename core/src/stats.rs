@@ -66,7 +66,7 @@ impl Display for Stats {
         if std::env::var("SHOW_WORDS").is_ok() {
             writeln!(f, "Words:")?;
             for (word, stats) in &self.words {
-                writeln!(f, "{}: {}", word.to_string(), stats.count)?;
+                writeln!(f, "{}: {}", word, stats.count)?;
             }
         }
         Ok(())

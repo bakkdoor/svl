@@ -43,15 +43,7 @@ impl HttpStatsClient {
             // <option value="$URL">$NAME</option>
             let author_info = AuthorInfo {
                 name: author.inner_html().trim().into(),
-                url: Self::path_to_url(
-                    author
-                        .value()
-                        .attr("value")
-                        .unwrap()
-                        .to_string()
-                        .trim()
-                        .into(),
-                ),
+                url: Self::path_to_url(author.value().attr("value").unwrap().trim()),
                 texts: Vec::new(),
             };
             authors.push(author_info);
@@ -65,6 +57,7 @@ impl HttpStatsClient {
     }
 
     pub async fn get_texts(&self, author_info: &AuthorInfo) -> crate::Result<Vec<TextInfo>> {
+        println!("Fetching text list for {}", author_info.name);
         let _permit = self.semaphore.acquire().await?;
         let html_text = self
             .client
@@ -82,9 +75,7 @@ impl HttpStatsClient {
         for book in html.select(&selector) {
             let book_info = TextInfo {
                 name: book.inner_html().trim().into(),
-                url: Self::path_to_url(
-                    book.value().attr("href").unwrap().to_string().trim().into(),
-                ),
+                url: Self::path_to_url(book.value().attr("href").unwrap().trim()),
             };
             books.push(book_info);
         }

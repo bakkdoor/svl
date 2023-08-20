@@ -40,11 +40,11 @@ impl Text {
     pub fn words(&self) -> impl Iterator<Item = Word> + '_ {
         self.text
             .split_whitespace()
-            .filter_map(|s| Self::trim_latin_word(s))
+            .filter_map(Self::trim_latin_word)
     }
 
     pub fn trim_latin_word(word: &str) -> Option<Word> {
-        let trimmed = word.clone().trim();
+        let trimmed = word.trim();
         let trimmed = trimmed.replace("<p>", "").replace("</p>", "");
         let trimmed = trimmed.replace(
             &[
@@ -54,10 +54,16 @@ impl Text {
             "",
         );
 
-        let char = trimmed.chars().nth(0);
-        if trimmed.is_empty() || char.is_none() || char.is_some() && !char.unwrap().is_alphabetic()
-        {
+        if trimmed.is_empty() {
             return None;
+        }
+
+        let mut char = trimmed.chars().next();
+        while char.is_some() {
+            if !char.unwrap().is_alphabetic() {
+                return None;
+            }
+            char = trimmed.chars().next();
         }
 
         Some(Word(trimmed))
@@ -77,9 +83,9 @@ impl<Url: ToString, Txt: ToString> From<(Url, Txt)> for Text {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Word(String);
 
-impl Word {
-    pub fn to_string(&self) -> String {
-        self.0.clone()
+impl Display for Word {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
     }
 }
 
