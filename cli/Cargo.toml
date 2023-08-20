@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 svl-core = { path = "../core" }
 clap = "*"
+thiserror.workspace = true
