@@ -11,7 +11,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         if !author.texts.is_empty() {
             print!(": {} texts", author.texts.len());
         }
-        println!("");
+        println!()
     }
     let mut text = client.fetch_text("https://thelatinlibrary.com/").await?;
     stats.add_text(&mut text);
