@@ -1,3 +1,5 @@
+pub mod stats;
+
 use thiserror::Error;
 use tokio::task::JoinError;
 

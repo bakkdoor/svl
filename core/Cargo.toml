@@ -7,5 +7,7 @@ edition = "2021"
 
 [dependencies]
 reqwest.workspace = true
+serde.workspace = true
+serde_derive.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
