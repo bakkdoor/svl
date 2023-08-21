@@ -22,6 +22,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         author_texts.push(texts);
     }
 
+    assert!(author_texts.len() == authors.len());
+
     for (idx, text) in author_texts.into_iter().enumerate() {
         if let Some(author) = authors.get_mut(idx) {
             author.texts = text;
