@@ -108,5 +108,15 @@ mod tests {
         assert_eq!(stats.words.get(&"world".into()).unwrap().count, 1);
         assert_eq!(stats.words.get(&"test".into()).unwrap().count, 1);
         assert_eq!(stats.words.get(&"text".into()).unwrap().count, 1);
+
+        let mut text = Text::new("URL".into(), "more text is here?!".into());
+        stats.add_text(&mut text);
+
+        assert_eq!(stats.texts.len(), 2);
+        assert_eq!(stats.word_count, 8);
+        assert_eq!(stats.unique_word_count, 7);
+        assert_eq!(stats.words.len(), 7);
+        assert_eq!(stats.words.get(&"hello".into()).unwrap().count, 1);
+        assert_eq!(stats.words.get(&"text".into()).unwrap().count, 2);
     }
 }
