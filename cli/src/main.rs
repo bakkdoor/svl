@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     for tf in text_futures {
         let text = tf.await?;
-        stats.add_text(&text);
+        stats.add_text(text);
     }
 
     println!("Final stats: {}", stats);

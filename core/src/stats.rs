@@ -29,12 +29,17 @@ impl Stats {
         }
     }
 
-    pub fn add_text(&mut self, text: &Text) {
+    pub fn add_text(&mut self, text: Text) {
         let id = TextId::from(self.texts.len() + 1);
-        println!("Processing Text {}: {}", id, text.url);
-        let mut text = text.clone();
+        let words: Vec<Word> = text.words().collect();
+        println!(
+            "Processing Text {} ({} words): {}",
+            id,
+            words.len(),
+            text.url
+        );
+        let mut text = text;
         text.set_id(id);
-        let words = text.words();
         self.texts.push(text);
         for word in words {
             self.add_word(id, word);
@@ -55,7 +60,7 @@ impl Stats {
 
     pub fn merge(&mut self, other: &Self) {
         for text in &other.texts {
-            self.add_text(&mut text.clone());
+            self.add_text(text.clone());
         }
     }
 }
@@ -74,7 +79,7 @@ impl Display for Stats {
         if std::env::var("SHOW_WORDS").is_ok() {
             writeln!(f, "Words:")?;
             for (word, stats) in &self.words {
-                writeln!(f, "{}: {}", word, stats.count)?;
+                writeln!(f, "\t{} : {}", word, stats.count)?;
             }
         }
         Ok(())
@@ -105,8 +110,8 @@ mod tests {
     #[test]
     fn add_text() {
         let mut stats = Stats::new();
-        let mut text = Text::new("URL".into(), "hello world test text".into());
-        stats.add_text(&mut text);
+        let text = Text::new("URL".into(), "hello world test text".into());
+        stats.add_text(text);
 
         assert_eq!(stats.texts.len(), 1);
         assert_eq!(stats.word_count, 4);
@@ -117,8 +122,8 @@ mod tests {
         assert_eq!(stats.words.get(&"test".into()).unwrap().count, 1);
         assert_eq!(stats.words.get(&"text".into()).unwrap().count, 1);
 
-        let mut text = Text::new("URL".into(), "more text is here?!".into());
-        stats.add_text(&mut text);
+        let text = Text::new("URL".into(), "more text is here?!".into());
+        stats.add_text(text);
 
         assert_eq!(stats.texts.len(), 2);
         assert_eq!(stats.word_count, 8);

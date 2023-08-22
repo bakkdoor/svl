@@ -44,7 +44,7 @@ impl Text {
     }
 
     pub fn trim_latin_word(word: &str) -> Option<Word> {
-        let trimmed = word.trim();
+        let trimmed = word.trim().replace("&nbsp;", " ");
         if trimmed.is_empty() {
             return None;
         }
