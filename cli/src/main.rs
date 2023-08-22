@@ -51,8 +51,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     for tf in text_futures {
-        let mut text = tf.await?;
-        stats.add_text(&mut text);
+        let text = tf.await?;
+        stats.add_text(&text);
     }
 
     println!("Final stats: {}", stats);

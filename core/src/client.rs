@@ -68,19 +68,19 @@ impl HttpStatsClient {
         drop(permit);
 
         let html = scraper::Html::parse_document(&html_text);
-        let mut books = Vec::new();
+        let mut text_infos = Vec::new();
 
         let selector = scraper::Selector::parse("div.work table tr td a").unwrap();
 
-        for book in html.select(&selector) {
-            let book_info = TextInfo {
-                name: book.inner_html().trim().into(),
-                url: Self::path_to_url(book.value().attr("href").unwrap().trim()),
+        for txt in html.select(&selector) {
+            let text_info = TextInfo {
+                name: txt.inner_html().trim().into(),
+                url: Self::path_to_url(txt.value().attr("href").unwrap().trim()),
             };
-            books.push(book_info);
+            text_infos.push(text_info);
         }
 
-        Ok(books)
+        Ok(text_infos)
     }
 }
 

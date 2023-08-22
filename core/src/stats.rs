@@ -29,12 +29,14 @@ impl Stats {
         }
     }
 
-    pub fn add_text(&mut self, text: &mut Text) {
+    pub fn add_text(&mut self, text: &Text) {
         let id = TextId::from(self.texts.len() + 1);
         println!("Processing Text {}: {}", id, text.url);
+        let mut text = text.clone();
         text.set_id(id);
-        self.texts.push(text.clone());
-        for word in text.words() {
+        let words = text.words();
+        self.texts.push(text);
+        for word in words {
             self.add_word(id, word);
         }
     }
@@ -48,6 +50,12 @@ impl Stats {
         word_stats.count += 1;
         if word_stats.count == 1 {
             self.unique_word_count += 1;
+        }
+    }
+
+    pub fn merge(&mut self, other: &Self) {
+        for text in &other.texts {
+            self.add_text(&mut text.clone());
         }
     }
 }
