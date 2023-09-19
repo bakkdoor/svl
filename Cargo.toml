@@ -13,6 +13,15 @@ authors = ["Christopher Bertels <bakkdoor@flasht.de>"]
 [workspace.dependencies]
 anyhow = "*"
 chrono = "*"
+cozo = { version = "0.7.5", features = [
+  "compact",
+  "graph",
+  "graph-algo",
+  "minimal",
+  "rayon",
+  "requests",
+  "storage-rocksdb",
+] }
 regex = "*"
 serde = "*"
 serde_json = "*"
