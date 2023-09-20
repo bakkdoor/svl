@@ -43,7 +43,7 @@ impl Stats {
         );
         let mut text = text;
         text.set_id(id);
-        self.texts.push(text);
+        self.texts.push(text.clone());
         for word in words {
             self.add_word(id, word);
         }
@@ -75,14 +75,28 @@ impl Stats {
         println!("Storing Stats in DB");
         let tx = db.multi_tx(true);
 
+        for text in &self.texts {
+            let text_id = text.id.expect("Text should have an id");
+            let author_id = text.author_id.expect("Text should have an author id");
+            let text_url = text.url.clone();
+
+            tx.run_script(
+                format!(
+                    "?[text_id, url, author_id] <- [[{}, '{}', {}]]; {}",
+                    text_id, text_url, author_id, ":put Text { text_id, url, author_id }"
+                )
+                .as_str(),
+                Default::default(),
+            )?;
+        }
+
         for (word, word_stats) in &self.words {
             for text_id in &word_stats.text_ids {
                 let query = format!(
                     "?[word, count, text_id] <- [['{}', {}, {}]]; {}",
                     word, word_stats.count, text_id, ":put Word { word, count, text_id }"
                 );
-                let result = tx.run_script(query.as_str(), Default::default())?;
-                println!("{:?}", result);
+                tx.run_script(query.as_str(), Default::default())?;
             }
         }
         tx.commit()?;

@@ -6,9 +6,13 @@
     "words": [
         "Configurer",
         "cozo",
+        "hrefa",
+        "namea",
         "reqwest",
         "rocksdb",
         "rustyline",
+        "sizefont",
+        "stylefontsize",
         "thiserror"
     ],
     "ignoreWords": [],

@@ -29,6 +29,7 @@ pub struct Text {
     pub id: Option<TextId>,
     pub url: String,
     pub text: String,
+    pub author_id: Option<usize>,
 }
 
 impl Text {
@@ -37,6 +38,7 @@ impl Text {
             id: None,
             url,
             text,
+            author_id: None,
         }
     }
 
@@ -51,14 +53,7 @@ impl Text {
     }
 
     pub fn trim_latin_word(word: &str) -> Option<Word> {
-        let trimmed = word
-            .trim()
-            .replace("&nbsp;", " ")
-            .replace("sizefont", "")
-            .replace("stylefontsize", "")
-            .replace("br", "")
-            .replace("hrefa", "")
-            .replace("namea", "");
+        let trimmed = word.trim().replace("&nbsp;", " ");
 
         if trimmed.is_empty() {
             return None;
@@ -75,7 +70,10 @@ impl Text {
             .text()
             .collect::<String>();
 
-        Some(Word(trimmed))
+        match trimmed.as_str() {
+            "sizefont" | "stylefontsize" | "br" | "hrefa" | "namea" => None,
+            _ => Some(Word(trimmed)),
+        }
     }
 
     pub fn is_latin_word(word: &Word) -> bool {

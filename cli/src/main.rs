@@ -100,9 +100,9 @@ async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> 
 
     assert!(author_texts.len() == authors.len());
 
-    for (idx, text) in author_texts.into_iter().enumerate() {
+    for (idx, texts) in author_texts.into_iter().enumerate() {
         if let Some(author) = authors.get_mut(idx) {
-            author.texts = text;
+            author.texts = texts;
         }
     }
 
@@ -119,15 +119,16 @@ async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> 
 
     let mut text_futures = Vec::with_capacity(authors.len());
 
-    for author in &authors {
+    for (author_id, author) in authors.iter().enumerate() {
         for text_info in &author.texts {
             println!("Fetching {}", text_info.url);
-            text_futures.push(client.fetch_text(&text_info.url));
+            text_futures.push((author_id, client.fetch_text(&text_info.url)));
         }
     }
 
-    for tf in text_futures {
-        let text = tf.await?;
+    for (author_id, tf) in text_futures {
+        let mut text = tf.await?;
+        text.author_id = Some(author_id);
         stats.add_text(text);
     }
 
