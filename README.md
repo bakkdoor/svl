@@ -27,5 +27,25 @@ The executable will be in the `./target/release` directory.
 You can run the program with:
 
 ```bash
-./target/release/svl
+./target/release/svl --help
+```
+
+CozoDB is used to store the data using the rocksdb storage backend.
+### Create Cozo Graph DB with schema
+
+```bash
+./target/release/svl create-db
+```
+
+### Import texts from [https://thelatinlibrary.com](thelatinlibrary.com)
+
+
+```bash
+./target/release/svl import-library
+```
+
+### Run REPL to query DB interactively via CLI
+
+```bash
+./target/release/svl repl
 ```

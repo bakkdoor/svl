@@ -17,10 +17,12 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum CLICommand {
-    #[clap(about = "Create the database schema")]
-    CreateSchema,
-    #[clap(about = "Fetch and store stats")]
-    FetchStats,
+    #[clap(about = "Create the database + schema")]
+    CreateDB,
+
+    #[clap(about = "Import Latin library texts and calculate stats")]
+    ImportLibrary,
+
     #[clap(about = "Run interactive REPL")]
     Repl,
 }
@@ -31,10 +33,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let db = DBConnection::new()?;
 
     match cli.command {
-        CLICommand::CreateSchema => {
+        CLICommand::CreateDB => {
             create_schema(&db).await?;
         }
-        CLICommand::FetchStats => {
+        CLICommand::ImportLibrary => {
             fetch_and_store_stats(&db).await?;
         }
         CLICommand::Repl => {
