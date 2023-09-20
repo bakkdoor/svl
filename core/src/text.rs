@@ -68,16 +68,13 @@ impl Text {
         let trimmed = scraper::Html::parse_fragment(&trimmed)
             .root_element()
             .text()
-            .collect::<String>();
+            .collect::<String>()
+            .to_lowercase();
 
         match trimmed.as_str() {
-            "sizefont" | "stylefontsize" | "br" | "hrefa" | "namea" => None,
+            "p" | "br" | "hrefa" | "namea" | "sizefont" | "stylefontsize" => None,
             _ => Some(Word(trimmed)),
         }
-    }
-
-    pub fn is_latin_word(word: &Word) -> bool {
-        word.0.chars().all(|c| c.is_alphabetic())
     }
 }
 
@@ -127,5 +124,30 @@ impl From<Word> for DataValue {
 impl From<&Word> for DataValue {
     fn from(w: &Word) -> Self {
         DataValue::Str(w.0.clone().into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_trim_latin_word() {
+        assert_eq!(Text::trim_latin_word(" a..."), Some(Word::from("a")));
+        assert_eq!(Text::trim_latin_word(" AB "), Some(Word::from("ab")));
+        assert_eq!(Text::trim_latin_word("  est!?."), Some(Word::from("est")));
+        assert_eq!(Text::trim_latin_word(". Ita!"), Some(Word::from("ita")));
+        assert_eq!(
+            Text::trim_latin_word(" habemus "),
+            Some(Word::from("habemus"))
+        );
+
+        assert_eq!(Text::trim_latin_word("<p>"), None);
+        assert_eq!(Text::trim_latin_word("<br/>"), None);
+        assert_eq!(Text::trim_latin_word("br"), None);
+        assert_eq!(Text::trim_latin_word("p"), None);
+        assert_eq!(Text::trim_latin_word("hrefa"), None);
+        assert_eq!(Text::trim_latin_word("namea"), None);
+        assert_eq!(Text::trim_latin_word("sizefont"), None);
     }
 }
