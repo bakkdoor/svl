@@ -43,10 +43,10 @@ fn validated_editor() -> Result<Editor<InputValidator, FileHistory>, ReadlineErr
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn run_repl(db: &DBConnection) -> anyhow::Result<()> {
-    println!("📖 Statistica Verbōrum Latīna 📚");
-    print!("🖥  Interactive Shell ");
-    println!("{VERSION} 🦀 \n");
-    println!("Enter rogātō expressions below. You can add new lines via SHIFT-DOWN.\n");
+    println!("📖 Statistica Verbōrum Latīna REPL {VERSION} 📚");
+    println!(
+        "Enter CozoDB Datalog scripts / queries below. You can add new lines via SHIFT-DOWN.\n"
+    );
 
     let mut counter = 0usize;
 

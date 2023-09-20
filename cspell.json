@@ -6,15 +6,19 @@
     "words": [
         "Configurer",
         "cozo",
+        "Datalog",
         "habemus",
         "hrefa",
+        "Latīna",
         "namea",
         "reqwest",
         "rocksdb",
         "rustyline",
         "sizefont",
+        "Statistica",
         "stylefontsize",
-        "thiserror"
+        "thiserror",
+        "Verbōrum"
     ],
     "ignoreWords": [],
     "import": []
