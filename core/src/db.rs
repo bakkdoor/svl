@@ -32,4 +32,8 @@ impl DBConnection {
         self.db
             .run_script(script, params, ScriptMutability::Mutable)
     }
+
+    pub fn multi_tx(&self, write: bool) -> cozo::MultiTransaction {
+        self.db.multi_transaction(write)
+    }
 }

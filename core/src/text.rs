@@ -20,7 +20,7 @@ impl From<usize> for TextId {
 
 impl Display for TextId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "#{}", self.0)
+        write!(f, "{}", self.0)
     }
 }
 

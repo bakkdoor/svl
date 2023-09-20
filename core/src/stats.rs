@@ -6,7 +6,7 @@ use std::{
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    db::{DBParams, DataValue, Num},
+    db::{DBConnection, DBParams, DataValue, Num},
     text::{Text, TextId, Word},
 };
 
@@ -67,14 +67,18 @@ impl Stats {
         }
     }
 
-    pub fn store_in_db(
-        &self,
-        db: &crate::db::DBConnection,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn store_in_db(&self, db: &DBConnection) -> Result<(), Box<dyn std::error::Error>> {
+        let tx = db.multi_tx(true);
+
         for (word, word_stats) in &self.words {
             for text_id in &word_stats.text_ids {
-                db.run_mutable(
-                    ":put Word { word, count, text_id }",
+                let query = format!(
+                    "?[word, count, text_id] <- [['{}', {}, {}]]; {}",
+                    word, word_stats.count, text_id, ":put Word { word, count, text_id }"
+                );
+
+                tx.run_script(
+                    query.as_str(),
                     DBParams::from_iter(vec![
                         ("word".into(), word.into()),
                         (
@@ -86,6 +90,7 @@ impl Stats {
                 )?;
             }
         }
+        tx.commit()?;
         Ok(())
     }
 }
