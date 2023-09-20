@@ -53,7 +53,7 @@ impl Stats {
         if word.is_empty() {
             return;
         }
-
+        let word = word.to_lowercase();
         self.word_count += 1;
         let word_stats = self
             .words

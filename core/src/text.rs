@@ -51,7 +51,15 @@ impl Text {
     }
 
     pub fn trim_latin_word(word: &str) -> Option<Word> {
-        let trimmed = word.trim().replace("&nbsp;", " ");
+        let trimmed = word
+            .trim()
+            .replace("&nbsp;", " ")
+            .replace("sizefont", "")
+            .replace("stylefontsize", "")
+            .replace("br", "")
+            .replace("hrefa", "")
+            .replace("namea", "");
+
         if trimmed.is_empty() {
             return None;
         }
@@ -88,6 +96,10 @@ impl Word {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    pub fn to_lowercase(&self) -> Self {
+        Self(self.0.to_lowercase())
+    }
 }
 
 impl Display for Word {
@@ -99,6 +111,12 @@ impl Display for Word {
 impl From<&str> for Word {
     fn from(s: &str) -> Self {
         Self(s.into())
+    }
+}
+
+impl From<String> for Word {
+    fn from(s: String) -> Self {
+        Self(s)
     }
 }
 
