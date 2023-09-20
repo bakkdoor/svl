@@ -10,7 +10,7 @@ mod repl;
 
 #[derive(Parser)]
 #[command(author,version,about,long_about=None)]
-struct CLI {
+struct Cli {
     #[clap(subcommand)]
     command: CLICommand,
 }
@@ -22,12 +22,12 @@ enum CLICommand {
     #[clap(about = "Fetch and store stats")]
     FetchStats,
     #[clap(about = "Run interactive REPL")]
-    REPL,
+    Repl,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let cli = CLI::parse();
+    let cli = Cli::parse();
     let db = DBConnection::new()?;
 
     match cli.command {
@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         CLICommand::FetchStats => {
             fetch_and_store_stats(&db).await?;
         }
-        CLICommand::REPL => {
+        CLICommand::Repl => {
             repl::run_repl(&db)?;
         }
     }
@@ -132,7 +132,7 @@ async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> 
         stats.add_text(text);
     }
 
-    stats.store_in_db(&db)?;
+    stats.store_in_db(db)?;
 
     println!("Final stats: {}", stats);
     Ok(())

@@ -130,7 +130,7 @@ fn parse_eval_print(db: &DBConnection, counter: usize, code: &str) -> Result<(),
 
             // Print the table to stdout
             table.printstd();
-            println!("");
+
             Ok(())
         }
         Err(e) => {
