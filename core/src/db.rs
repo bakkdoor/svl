@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-pub use cozo::DataValue;
+pub use cozo::{DataValue, Num};
 use cozo::{DbInstance, ScriptMutability};
 
 pub struct DBConnection {
@@ -20,7 +20,6 @@ impl DBConnection {
         script: &str,
         params: DBParams,
     ) -> Result<cozo::NamedRows, cozo::Error> {
-        // let script = "?[a] := a in [1, 2, 3]";
         self.db
             .run_script(script, params, ScriptMutability::Immutable)
     }

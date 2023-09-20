@@ -1,9 +1,16 @@
+use serde_derive::{Deserialize, Serialize};
 use std::fmt::Display;
 
-use serde_derive::{Deserialize, Serialize};
+use crate::db::{DataValue, Num};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TextId(usize);
+
+impl From<&TextId> for DataValue {
+    fn from(id: &TextId) -> Self {
+        DataValue::Num(Num::Int(id.0 as i64))
+    }
+}
 
 impl From<usize> for TextId {
     fn from(idx: usize) -> Self {
@@ -86,5 +93,17 @@ impl Display for Word {
 impl From<&str> for Word {
     fn from(s: &str) -> Self {
         Self(s.into())
+    }
+}
+
+impl From<Word> for DataValue {
+    fn from(w: Word) -> Self {
+        DataValue::Str(w.0.into())
+    }
+}
+
+impl From<&Word> for DataValue {
+    fn from(w: &Word) -> Self {
+        DataValue::Str(w.0.clone().into())
     }
 }

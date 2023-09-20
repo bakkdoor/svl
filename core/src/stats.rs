@@ -5,7 +5,10 @@ use std::{
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::text::{Text, TextId, Word};
+use crate::{
+    db::{DBParams, DataValue, Num},
+    text::{Text, TextId, Word},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 // Stats about Latin words found in various texts
@@ -62,6 +65,28 @@ impl Stats {
         for text in &other.texts {
             self.add_text(text.clone());
         }
+    }
+
+    pub fn store_in_db(
+        &self,
+        db: &crate::db::DBConnection,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for (word, word_stats) in &self.words {
+            for text_id in &word_stats.text_ids {
+                db.run_mutable(
+                    ":put Word { word, count, text_id }",
+                    DBParams::from_iter(vec![
+                        ("word".into(), word.into()),
+                        (
+                            "count".into(),
+                            DataValue::Num(Num::Int(word_stats.count as i64)),
+                        ),
+                        ("text_id".into(), text_id.into()),
+                    ]),
+                )?;
+            }
+        }
+        Ok(())
     }
 }
 
