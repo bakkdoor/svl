@@ -4,9 +4,11 @@
     "dictionaryDefinitions": [],
     "dictionaries": [],
     "words": [
+        "Configurer",
         "cozo",
         "reqwest",
         "rocksdb",
+        "rustyline",
         "thiserror"
     ],
     "ignoreWords": [],

@@ -6,6 +6,8 @@ use svl_core::{
     stats::Stats,
 };
 
+mod repl;
+
 #[derive(Parser)]
 #[command(author,version,about,long_about=None)]
 struct CLI {
@@ -36,7 +38,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             fetch_and_store_stats(&db).await?;
         }
         CLICommand::REPL => {
-            println!("REPL not implemented yet");
+            repl::run_repl(&db)?;
         }
     }
 
@@ -44,21 +46,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn create_schema(db: &DBConnection) -> Result<(), Box<dyn Error>> {
-    let result = db.run_mutable(
+    let author_result = db.run_mutable(
         ":create Author { author_id: Int, name: String => url: String }",
         Default::default(),
     )?;
-    println!("Create Author DB Result: {:?}", result);
-    let result = db.run_mutable(
+
+    let word_result = db.run_mutable(
         ":create Word { word: String, text_id: Int => count: Int }",
         Default::default(),
     )?;
-    println!("Create Word DB Result: {:?}", result);
-    let result = db.run_mutable(
+
+    let text_result = db.run_mutable(
         ":create Text { text_id: Int, url: String => author_id: Int }",
         Default::default(),
     )?;
-    println!("Create Text DB Result: {:?}", result);
+
+    println!("Create schema Author: {:?}", author_result);
+    println!("Create schema Word: {:?}", word_result);
+    println!("Create schema Text: {:?}", text_result);
+
     Ok(())
 }
 
