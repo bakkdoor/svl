@@ -1,9 +1,27 @@
+use clap::{Parser, Subcommand};
 use std::error::Error;
 use svl_core::{
     client::{HttpStatsClient, TextInfo},
     db::{DBConnection, DBParams, DataValue, Num},
     stats::Stats,
 };
+
+#[derive(Parser)]
+#[command(author,version,about,long_about=None)]
+struct CLI {
+    #[clap(subcommand)]
+    command: CLICommand,
+}
+
+#[derive(Subcommand)]
+enum CLICommand {
+    #[clap(about = "Create the database schema")]
+    CreateSchema,
+    #[clap(about = "Fetch and store stats")]
+    FetchStats,
+    #[clap(about = "Run interactive REPL")]
+    REPL,
+}
 
 async fn create_schema(db: &DBConnection) -> Result<(), Box<dyn Error>> {
     let script = "
@@ -16,20 +34,11 @@ async fn create_schema(db: &DBConnection) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let db = svl_core::db::DBConnection::new()?;
+async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> {
     let mut stats = Stats::new();
     let client = HttpStatsClient::new()?;
     let mut authors = client.get_authors().await?;
     let mut text_futures = Vec::with_capacity(authors.len());
-
-    match create_schema(&db).await {
-        Ok(_) => {}
-        Err(e) => {
-            println!("Error creating schema: {}", e);
-        }
-    }
 
     for (idx, author) in authors.iter().enumerate() {
         text_futures.push(client.get_texts(author));
@@ -88,6 +97,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // stats.store_in_db(&db)?;
 
     println!("Final stats: {}", stats);
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let cli = CLI::parse();
+    let db = DBConnection::new()?;
+
+    match cli.command {
+        CLICommand::CreateSchema => {
+            create_schema(&db).await?;
+        }
+        CLICommand::FetchStats => {
+            fetch_and_store_stats(&db).await?;
+        }
+        CLICommand::REPL => {
+            println!("REPL not implemented yet");
+        }
+    }
 
     Ok(())
 }

@@ -8,6 +8,6 @@ edition = "2021"
 
 [dependencies]
 svl-core = { path = "../core" }
-clap = "*"
+clap = { version = "*", features = ["derive"] }
 thiserror.workspace = true
 tokio.workspace = true
