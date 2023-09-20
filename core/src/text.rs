@@ -6,6 +6,12 @@ use crate::db::{DataValue, Num};
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TextId(usize);
 
+impl From<TextId> for DataValue {
+    fn from(id: TextId) -> Self {
+        DataValue::Num(Num::Int(id.0 as i64))
+    }
+}
+
 impl From<&TextId> for DataValue {
     fn from(id: &TextId) -> Self {
         DataValue::Num(Num::Int(id.0 as i64))

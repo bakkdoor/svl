@@ -6,7 +6,7 @@ use std::{
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    db::DBConnection,
+    db::{int_val, list_val, DBConnection, DBParams},
     text::{Text, TextId, Word},
 };
 
@@ -80,22 +80,37 @@ impl Stats {
             let text_url = text.url.clone();
 
             tx.run_script(
-                format!(
-                    "?[text_id, url, author_id] <- [[{}, '{}', {}]]; {}",
-                    text_id, text_url, author_id, ":put Text { text_id, url, author_id }"
-                )
-                .as_str(),
-                Default::default(),
+                "
+                ?[text_id, url, author_id] <- [$props];
+                :put Text { text_id, url, author_id }
+                ",
+                DBParams::from_iter(vec![(
+                    "props".into(),
+                    list_val(vec![
+                        text_id.into(),
+                        text_url.clone().into(),
+                        int_val(author_id as i64),
+                    ]),
+                )]),
             )?;
         }
 
         for (word, word_stats) in &self.words {
             for text_id in &word_stats.text_ids {
-                let query = format!(
-                    "?[word, count, text_id] <- [['{}', {}, {}]]; {}",
-                    word, word_stats.count, text_id, ":put Word { word, count, text_id }"
-                );
-                tx.run_script(query.as_str(), Default::default())?;
+                tx.run_script(
+                    "
+                    ?[word, count, text_id] <- [$props];
+                    :put Word { word, count, text_id }
+                    ",
+                    DBParams::from_iter(vec![(
+                        "props".into(),
+                        list_val(vec![
+                            word.clone().into(),
+                            int_val(word_stats.count as i64),
+                            text_id.into(),
+                        ]),
+                    )]),
+                )?;
             }
         }
         tx.commit()?;

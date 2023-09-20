@@ -11,6 +11,7 @@
         "hrefa",
         "Latīna",
         "namea",
+        "Readline",
         "reqwest",
         "rocksdb",
         "rustyline",

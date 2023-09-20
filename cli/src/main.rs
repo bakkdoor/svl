@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use std::error::Error;
 use svl_core::{
     client::{HttpStatsClient, TextInfo},
-    db::DBConnection,
+    db::{int_val, list_val, DBConnection, DBParams},
     stats::Stats,
 };
 
@@ -48,24 +48,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn create_schema(db: &DBConnection) -> Result<(), Box<dyn Error>> {
-    let author_result = db.run_mutable(
+    println!("Creating DB with schema");
+
+    let tx = db.multi_tx(true);
+
+    tx.run_script(
         ":create Author { author_id: Int, name: String => url: String }",
         Default::default(),
     )?;
 
-    let word_result = db.run_mutable(
+    tx.run_script(
         ":create Word { word: String, text_id: Int => count: Int }",
         Default::default(),
     )?;
 
-    let text_result = db.run_mutable(
+    tx.run_script(
         ":create Text { text_id: Int, url: String => author_id: Int }",
         Default::default(),
     )?;
 
-    println!("Create schema Author: {:?}", author_result);
-    println!("Create schema Word: {:?}", word_result);
-    println!("Create schema Text: {:?}", text_result);
+    tx.commit()?;
+
+    println!("Success. DB saved to svl-stats.db");
 
     Ok(())
 }
@@ -82,12 +86,18 @@ async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> 
         text_futures.push(client.get_texts(author));
 
         tx.run_script(
-            format!(
-                "?[author_id, name, url] <- [[{}, '{}', '{}']]; {}",
-                idx, author.name, author.url, ":put Author { author_id, name => url }"
-            )
-            .as_str(),
-            Default::default(),
+            "
+            ?[author_id, name, url] <- [$props];
+            :put Author { author_id, name => url }
+            ",
+            DBParams::from_iter(vec![(
+                "props".into(),
+                list_val(vec![
+                    int_val(idx as i64),
+                    author.name.clone().into(),
+                    author.url.clone().into(),
+                ]),
+            )]),
         )?;
     }
 
