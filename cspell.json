@@ -11,6 +11,8 @@
         "hrefa",
         "Latīna",
         "namea",
+        "prettytable",
+        "printstd",
         "Readline",
         "reqwest",
         "rocksdb",
