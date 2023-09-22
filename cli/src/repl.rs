@@ -114,28 +114,32 @@ impl From<ReadlineError> for REPLError {
 fn parse_eval_print(db: &DBConnection, counter: usize, code: &str) -> Result<(), REPLError> {
     let params = Default::default();
     match db.run_mutable(code, params) {
-        Ok(named_rows) => {
-            println!("{counter:03} ✅");
-            let mut table = Table::new();
-            let column_names = named_rows.headers.iter().map(|h| Cell::new(h)).collect();
-            table.set_titles(Row::new(column_names));
-
-            for row in named_rows.rows.iter() {
-                let cells = row
-                    .iter()
-                    .map(|c| Cell::new(c.clone().to_string().as_str()))
-                    .collect();
-                table.add_row(Row::new(cells));
-            }
-
-            // Print the table to stdout
-            table.printstd();
-
-            Ok(())
-        }
-        Err(e) => {
-            eprintln!("{counter:03} ❌ {e}\n");
-            Err(REPLError::Cozo(e))
-        }
+        Ok(named_rows) => print_result_table(counter, named_rows),
+        Err(e) => print_error(counter, e),
     }
+}
+
+fn print_result_table(counter: usize, named_rows: cozo::NamedRows) -> Result<(), REPLError> {
+    println!("{counter:03} ✅");
+    let mut table = Table::new();
+    let column_names = named_rows.headers.iter().map(|h| Cell::new(h)).collect();
+    table.set_titles(Row::new(column_names));
+
+    for row in named_rows.rows.iter() {
+        let cells = row
+            .iter()
+            .map(|c| Cell::new(c.clone().to_string().as_str()))
+            .collect();
+        table.add_row(Row::new(cells));
+    }
+
+    // Print the table to stdout
+    table.printstd();
+
+    Ok(())
+}
+
+fn print_error(counter: usize, e: cozo::Error) -> Result<(), REPLError> {
+    eprintln!("{counter:03} ❌ {e}\n");
+    Err(REPLError::Cozo(e))
 }
