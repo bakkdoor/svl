@@ -82,7 +82,7 @@ impl Stats {
             tx.run_script(
                 "
                 ?[text_id, url, author_id] <- [$props];
-                :put Text { text_id, url, author_id }
+                :put Text { text_id, author_id => url }
                 ",
                 DBParams::from_iter(vec![(
                     "props".into(),
@@ -100,7 +100,7 @@ impl Stats {
                 tx.run_script(
                     "
                     ?[word, count, text_id] <- [$props];
-                    :put Word { word, count, text_id }
+                    :put Word { word, text_id => count }
                     ",
                     DBParams::from_iter(vec![(
                         "props".into(),
