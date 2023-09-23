@@ -58,9 +58,8 @@ impl Stats {
             .words
             .entry(word.clone())
             .or_insert_with(|| WordStats::new(text_id, word));
-        word_stats.count += 1;
-        word_stats.add_text_id(text_id);
-        if word_stats.count == 1 {
+        word_stats.count_text(text_id);
+        if word_stats.global_count() == 1 {
             self.unique_word_count += 1;
         }
     }
@@ -107,7 +106,7 @@ impl Stats {
                         "props".into(),
                         list_val(vec![
                             word.clone().into(),
-                            int_val(word_stats.count as i64),
+                            int_val(word_stats.count(text_id) as i64),
                             text_id.into(),
                         ]),
                     )]),
@@ -133,7 +132,7 @@ impl Display for Stats {
         if std::env::var("SHOW_WORDS").is_ok() {
             writeln!(f, "Words:")?;
             for (word, stats) in &self.words {
-                writeln!(f, "\t{} : {}", word, stats.count)?;
+                writeln!(f, "\t{} : {}", word, stats.global_count())?;
             }
         }
         Ok(())
@@ -144,7 +143,7 @@ impl Display for Stats {
 pub struct WordStats {
     text_ids: HashSet<TextId>,
     word: Word,
-    count: usize,
+    count: HashMap<TextId, usize>,
 }
 
 impl WordStats {
@@ -152,12 +151,26 @@ impl WordStats {
         Self {
             text_ids: HashSet::from_iter(vec![text_id]),
             word,
-            count: 0,
+            count: HashMap::new(),
         }
     }
 
-    pub fn add_text_id(&mut self, text_id: TextId) {
+    pub fn count_text(&mut self, text_id: TextId) {
         self.text_ids.insert(text_id);
+        self.incr_count(text_id);
+    }
+
+    pub fn count(&self, text_id: &TextId) -> usize {
+        self.count.get(text_id).copied().unwrap_or(0)
+    }
+
+    pub fn global_count(&self) -> usize {
+        self.count.values().sum()
+    }
+
+    pub fn incr_count(&mut self, text_id: TextId) {
+        let count = self.count.entry(text_id).or_insert(0);
+        *count += 1;
     }
 }
 
@@ -175,10 +188,10 @@ mod tests {
         assert_eq!(stats.word_count, 4);
         assert_eq!(stats.unique_word_count, 4);
         assert_eq!(stats.words.len(), 4);
-        assert_eq!(stats.words.get(&"hello".into()).unwrap().count, 1);
-        assert_eq!(stats.words.get(&"world".into()).unwrap().count, 1);
-        assert_eq!(stats.words.get(&"test".into()).unwrap().count, 1);
-        assert_eq!(stats.words.get(&"text".into()).unwrap().count, 1);
+        assert_eq!(stats.words.get(&"hello".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"world".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"test".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"text".into()).unwrap().global_count(), 1);
 
         let text = Text::new("URL".into(), "more text is here?!".into());
         stats.add_text(text);
@@ -187,7 +200,7 @@ mod tests {
         assert_eq!(stats.word_count, 8);
         assert_eq!(stats.unique_word_count, 7);
         assert_eq!(stats.words.len(), 7);
-        assert_eq!(stats.words.get(&"hello".into()).unwrap().count, 1);
-        assert_eq!(stats.words.get(&"text".into()).unwrap().count, 2);
+        assert_eq!(stats.words.get(&"hello".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"text".into()).unwrap().global_count(), 2);
     }
 }
