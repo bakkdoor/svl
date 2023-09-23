@@ -59,6 +59,7 @@ impl Stats {
             .entry(word.clone())
             .or_insert_with(|| WordStats::new(text_id, word));
         word_stats.count += 1;
+        word_stats.add_text_id(text_id);
         if word_stats.count == 1 {
             self.unique_word_count += 1;
         }
@@ -153,6 +154,10 @@ impl WordStats {
             word,
             count: 0,
         }
+    }
+
+    pub fn add_text_id(&mut self, text_id: TextId) {
+        self.text_ids.insert(text_id);
     }
 }
 
