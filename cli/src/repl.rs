@@ -122,14 +122,24 @@ fn parse_eval_print(db: &DBConnection, counter: usize, code: &str) -> Result<(),
 fn print_result_table(counter: usize, named_rows: cozo::NamedRows) -> Result<(), REPLError> {
     println!("{counter:03} ✅");
     let mut table = Table::new();
-    let column_names = named_rows.headers.iter().map(|h| Cell::new(h)).collect();
+    let mut column_names = Vec::with_capacity(named_rows.headers.len() + 1);
+
+    column_names.push(Cell::new("Row #"));
+
+    for header in named_rows.headers.iter() {
+        column_names.push(Cell::new(header));
+    }
+
     table.set_titles(Row::new(column_names));
 
-    for row in named_rows.rows.iter() {
-        let cells = row
-            .iter()
-            .map(|c| Cell::new(c.clone().to_string().as_str()))
-            .collect();
+    for (idx, row) in named_rows.rows.iter().enumerate() {
+        let mut cells = Vec::with_capacity(row.len() + 1);
+        cells.push(Cell::new(format!("{}", idx).as_str()));
+
+        for cell in row.iter() {
+            cells.push(Cell::new(cell.clone().to_string().as_str()));
+        }
+
         table.add_row(Row::new(cells));
     }
 
