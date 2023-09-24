@@ -77,10 +77,7 @@ impl Text {
             .collect::<String>()
             .to_lowercase();
 
-        match trimmed.as_str() {
-            "p" | "br" | "hrefa" | "namea" | "sizefont" | "stylefontsize" => None,
-            _ => Some(Word(trimmed)),
-        }
+        Some(Word(trimmed))
     }
 }
 
@@ -152,8 +149,5 @@ mod tests {
         assert_eq!(Text::trim_latin_word("<br/>"), None);
         assert_eq!(Text::trim_latin_word("br"), None);
         assert_eq!(Text::trim_latin_word("p"), None);
-        assert_eq!(Text::trim_latin_word("hrefa"), None);
-        assert_eq!(Text::trim_latin_word("namea"), None);
-        assert_eq!(Text::trim_latin_word("sizefont"), None);
     }
 }

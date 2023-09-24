@@ -25,6 +25,16 @@ impl HttpStatsClient {
     pub async fn fetch_text(&self, text_url: &str) -> crate::Result<Text> {
         let _permit = self.semaphore.acquire().await?;
         let text = self.client.get(text_url).send().await?.text().await?;
+        let body_selector = scraper::Selector::parse("body").unwrap();
+        let html = scraper::Html::parse_document(&text);
+        let body = html.select(&body_selector).next().unwrap().inner_html();
+
+        // only leave text nodes
+        let text = scraper::Html::parse_fragment(body.trim())
+            .root_element()
+            .text()
+            .collect::<String>();
+
         let text = Text::new(text_url.into(), text);
         Ok(text)
     }

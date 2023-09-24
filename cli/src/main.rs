@@ -86,25 +86,10 @@ async fn delete_filtered_words(db: &DBConnection) -> Result<(), Box<dyn Error>> 
     tx.run_script(
         "
         filtered_word[word] <- [
-            ['html'],
-            ['head'],
-            ['title'],
-            ['body'],
+            ['br'],
             ['classics'],
-            ['div'],
-            ['hrefhttpwwwthelatinlibrarycomiconico'],
-            ['hrefclassicshtmlthe'],
-            ['relstylesheet'],
             ['latin'],
-            ['link'],
-            ['librarya'],
-            ['hrefclassicshtmlthe'],
-            ['relshortcut'],
-            ['icon'],
-            ['span'],
-            ['spanbr'],
-            ['sizesupsupfont'],
-            ['sizefontbr'],
+            ['library'],
         ];
         del_word[word,text_id] := *Word{ word, text_id }, filtered_word[word];
         ?[word,text_id] := del_word[word,text_id]; :rm Word { word, text_id }
