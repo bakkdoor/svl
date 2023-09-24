@@ -81,8 +81,8 @@ impl Stats {
 
             tx.run_script(
                 "
-                ?[text_id, url, author_id] <- [$props];
-                :put Text { text_id, author_id => url }
+                ?[text_id, url, author_id, text] <- [$props];
+                :put Text { text_id, author_id => url, text }
                 ",
                 DBParams::from_iter(vec![(
                     "props".into(),
@@ -90,6 +90,7 @@ impl Stats {
                         text_id.into(),
                         text_url.clone().into(),
                         int_val(author_id as i64),
+                        text.text.clone().into(),
                     ]),
                 )]),
             )?;

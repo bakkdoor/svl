@@ -69,7 +69,7 @@ async fn create_schema(db: &DBConnection) -> Result<(), Box<dyn Error>> {
     )?;
 
     tx.run_script(
-        ":create Text { text_id: Int, author_id: Int => url: String }",
+        ":create Text { text_id: Int, author_id: Int => url: String, text: String }",
         Default::default(),
     )?;
 
