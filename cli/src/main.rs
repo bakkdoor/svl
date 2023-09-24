@@ -23,6 +23,9 @@ enum CLICommand {
     #[clap(about = "Import Latin library texts and calculate stats")]
     ImportLibrary,
 
+    #[clap(about = "Delete filtered words from DB")]
+    DeleteFilteredWords,
+
     #[clap(about = "Run interactive REPL")]
     Repl,
 }
@@ -38,6 +41,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
         CLICommand::ImportLibrary => {
             fetch_and_store_stats(&db).await?;
+        }
+        CLICommand::DeleteFilteredWords => {
+            delete_filtered_words(&db).await?;
         }
         CLICommand::Repl => {
             repl::run_repl(&db)?;
@@ -70,6 +76,43 @@ async fn create_schema(db: &DBConnection) -> Result<(), Box<dyn Error>> {
     tx.commit()?;
 
     println!("Success. DB saved to svl-stats.db");
+
+    Ok(())
+}
+
+async fn delete_filtered_words(db: &DBConnection) -> Result<(), Box<dyn Error>> {
+    let tx = db.multi_tx(true);
+
+    tx.run_script(
+        "
+        filtered_word[word] <- [
+            ['html'],
+            ['head'],
+            ['title'],
+            ['body'],
+            ['classics'],
+            ['div'],
+            ['hrefhttpwwwthelatinlibrarycomiconico'],
+            ['hrefclassicshtmlthe'],
+            ['relstylesheet'],
+            ['latin'],
+            ['link'],
+            ['librarya'],
+            ['hrefclassicshtmlthe'],
+            ['relshortcut'],
+            ['icon'],
+            ['span'],
+            ['spanbr'],
+            ['sizesupsupfont'],
+            ['sizefontbr'],
+        ];
+        del_word[word,text_id] := *Word{ word, text_id }, filtered_word[word];
+        ?[word,text_id] := del_word[word,text_id]; :rm Word { word, text_id }
+        ",
+        Default::default(),
+    )?;
+
+    tx.commit()?;
 
     Ok(())
 }
