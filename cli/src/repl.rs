@@ -102,13 +102,10 @@ pub enum REPLError {
     Cozo(cozo::Error),
 
     #[error("ReadlineError: {0}")]
-    Readline(ReadlineError),
-}
+    Readline(#[from] ReadlineError),
 
-impl From<ReadlineError> for REPLError {
-    fn from(e: ReadlineError) -> Self {
-        REPLError::Readline(e)
-    }
+    #[error("IOError: {0}")]
+    IO(#[from] std::io::Error),
 }
 
 fn parse_eval_print(db: &DBConnection, counter: usize, code: &str) -> Result<(), REPLError> {
@@ -144,7 +141,7 @@ fn print_result_table(counter: usize, named_rows: cozo::NamedRows) -> Result<(),
     }
 
     // Print the table to stdout
-    table.printstd();
+    table.print_tty(true)?;
 
     Ok(())
 }
