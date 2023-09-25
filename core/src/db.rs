@@ -4,12 +4,11 @@ pub use cozo::{DataValue, Error as DBError, JsonData, NamedRows, Num, Validity, 
 use cozo::{DbInstance, ScriptMutability};
 
 pub type DBResult = Result<NamedRows, DBError>;
+pub type DBParams = BTreeMap<String, DataValue>;
 
 pub struct DBConnection {
     db: DbInstance,
 }
-
-pub type DBParams = BTreeMap<String, DataValue>;
 
 impl DBConnection {
     pub fn new() -> Result<Self, String> {
