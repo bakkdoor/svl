@@ -60,8 +60,12 @@ impl Text {
 
     pub fn words(&self) -> impl Iterator<Item = Word> + '_ {
         self.text
-            .split_whitespace()
+            .split(Self::word_splitter)
             .filter_map(Self::trim_latin_word)
+    }
+
+    pub fn word_splitter(c: char) -> bool {
+        c.is_whitespace() || c.is_ascii_punctuation() || !c.is_alphanumeric()
     }
 
     pub fn trim_latin_word(word: &str) -> Option<Word> {
@@ -149,6 +153,57 @@ impl ToDataValue for Word {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn text(txt: &str) -> Text {
+        Text::new("https://example.com".into(), txt.to_string())
+    }
+
+    #[test]
+    fn test_words() {
+        assert_eq!(
+            text("Quī linguam Latīnam discere vult variīs modīs id facere potest.")
+                .words()
+                .collect::<Vec<_>>(),
+            vec![
+                Word::from("quī"),
+                Word::from("linguam"),
+                Word::from("latīnam"),
+                Word::from("discere"),
+                Word::from("vult"),
+                Word::from("variīs"),
+                Word::from("modīs"),
+                Word::from("id"),
+                Word::from("facere"),
+                Word::from("potest")
+            ]
+        );
+
+        assert_eq!(
+            text(". Quomodo est?").words().collect::<Vec<_>>(),
+            vec![Word::from("quomodo"), Word::from("est")]
+        );
+
+        assert_eq!(
+            text(". Ita!?! Unde venis?").words().collect::<Vec<_>>(),
+            vec![Word::from("ita"), Word::from("unde"), Word::from("venis")]
+        );
+
+        assert_eq!(
+            text("Per variās terrās (et maria multa) iter faciēbant.")
+                .words()
+                .collect::<Vec<_>>(),
+            vec![
+                Word::from("per"),
+                Word::from("variās"),
+                Word::from("terrās"),
+                Word::from("et"),
+                Word::from("maria"),
+                Word::from("multa"),
+                Word::from("iter"),
+                Word::from("faciēbant")
+            ]
+        );
+    }
 
     #[test]
     fn test_trim_latin_word() {
