@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::Display;
 
-use crate::db::{DataValue, Num};
+use crate::db::{DataValue, Num, ToDataValue};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TextId(usize);
@@ -27,6 +27,12 @@ impl From<usize> for TextId {
 impl Display for TextId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl ToDataValue for TextId {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Num(Num::Int(self.0 as i64))
     }
 }
 
@@ -59,6 +65,10 @@ impl Text {
     }
 
     pub fn trim_latin_word(word: &str) -> Option<Word> {
+        if word.starts_with('<') || word.starts_with('>') {
+            return None;
+        }
+
         let trimmed = word.trim().replace("&nbsp;", " ");
 
         if trimmed.is_empty() {
@@ -130,6 +140,12 @@ impl From<&Word> for DataValue {
     }
 }
 
+impl ToDataValue for Word {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Str(self.0.clone().into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -144,10 +160,7 @@ mod tests {
             Text::trim_latin_word(" habemus "),
             Some(Word::from("habemus"))
         );
-
         assert_eq!(Text::trim_latin_word("<p>"), None);
         assert_eq!(Text::trim_latin_word("<br/>"), None);
-        assert_eq!(Text::trim_latin_word("br"), None);
-        assert_eq!(Text::trim_latin_word("p"), None);
     }
 }

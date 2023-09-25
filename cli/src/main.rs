@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use std::error::Error;
 use svl_core::{
     client::{HttpStatsClient, TextInfo},
-    db::{int_val, list_val, DBConnection, DBParams},
+    db::{val, DBConnection, DBParams},
     stats::Stats,
 };
 
@@ -120,10 +120,10 @@ async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> 
             ",
             DBParams::from_iter(vec![(
                 "props".into(),
-                list_val(vec![
-                    int_val(idx as i64),
-                    author.name.clone().into(),
-                    author.url.clone().into(),
+                val(vec![
+                    val(idx as i64),
+                    val(author.name.clone()),
+                    val(author.url.clone()),
                 ]),
             )]),
         )?;

@@ -6,7 +6,7 @@ use std::{
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    db::{int_val, list_val, DBConnection, DBParams},
+    db::{val, DBConnection, DBParams},
     text::{Text, TextId, Word},
 };
 
@@ -86,11 +86,11 @@ impl Stats {
                 ",
                 DBParams::from_iter(vec![(
                     "props".into(),
-                    list_val(vec![
-                        text_id.into(),
-                        text_url.clone().into(),
-                        int_val(author_id as i64),
-                        text.text.clone().into(),
+                    val(vec![
+                        val(text_id),
+                        val(text_url),
+                        val(author_id),
+                        val(text.text.clone()),
                     ]),
                 )]),
             )?;
@@ -105,10 +105,10 @@ impl Stats {
                     ",
                     DBParams::from_iter(vec![(
                         "props".into(),
-                        list_val(vec![
-                            word.clone().into(),
-                            int_val(word_stats.count(text_id) as i64),
-                            text_id.into(),
+                        val(vec![
+                            val(word),
+                            val(word_stats.count(text_id)),
+                            val(text_id),
                         ]),
                     )]),
                 )?;

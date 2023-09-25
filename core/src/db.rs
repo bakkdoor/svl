@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-pub use cozo::{DataValue, JsonData, Num, Validity, Vector};
+pub use cozo::{DataValue, Error as DBError, JsonData, NamedRows, Num, Validity, Vector};
 use cozo::{DbInstance, ScriptMutability};
+
+pub type DBResult = Result<NamedRows, DBError>;
 
 pub struct DBConnection {
     db: DbInstance,
@@ -15,20 +17,12 @@ impl DBConnection {
         Ok(Self { db })
     }
 
-    pub fn run_immutable(
-        &self,
-        script: &str,
-        params: DBParams,
-    ) -> Result<cozo::NamedRows, cozo::Error> {
+    pub fn run_immutable(&self, script: &str, params: DBParams) -> Result<NamedRows, DBError> {
         self.db
             .run_script(script, params, ScriptMutability::Immutable)
     }
 
-    pub fn run_mutable(
-        &self,
-        script: &str,
-        params: DBParams,
-    ) -> Result<cozo::NamedRows, cozo::Error> {
+    pub fn run_mutable(&self, script: &str, params: DBParams) -> Result<NamedRows, DBError> {
         self.db
             .run_script(script, params, ScriptMutability::Mutable)
     }
@@ -38,42 +32,103 @@ impl DBConnection {
     }
 }
 
-pub fn int_val(i: i64) -> DataValue {
-    DataValue::Num(Num::Int(i))
+pub trait ToDataValue {
+    fn to_data_value(&self) -> DataValue;
 }
 
-pub fn float_val(f: f64) -> DataValue {
-    DataValue::Num(Num::Float(f))
+impl<T> ToDataValue for &T
+where
+    T: ToDataValue,
+{
+    fn to_data_value(&self) -> DataValue {
+        (**self).to_data_value()
+    }
 }
 
-pub fn bool_val(b: bool) -> DataValue {
-    DataValue::Bool(b)
+impl ToDataValue for i64 {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Num(Num::Int(*self))
+    }
 }
 
-pub fn string_val(s: &str) -> DataValue {
-    DataValue::Str(s.into())
+impl ToDataValue for f64 {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Num(Num::Float(*self))
+    }
 }
 
-pub fn list_val(l: Vec<DataValue>) -> DataValue {
-    DataValue::List(l)
+impl ToDataValue for bool {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Bool(*self)
+    }
 }
 
-pub fn set_val(s: BTreeSet<DataValue>) -> DataValue {
-    DataValue::Set(s)
+impl ToDataValue for String {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Str(self.into())
+    }
 }
 
-pub fn vec_val(v: Vector) -> DataValue {
-    DataValue::Vec(v)
+impl ToDataValue for &str {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Str(self.to_string().into())
+    }
 }
 
-pub fn bytes_val(b: Vec<u8>) -> DataValue {
-    DataValue::Bytes(b)
+impl ToDataValue for Vec<DataValue> {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::List(self.clone())
+    }
 }
 
-pub fn json_val(j: JsonData) -> DataValue {
-    DataValue::Json(j)
+impl ToDataValue for BTreeSet<DataValue> {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Set(self.clone())
+    }
 }
 
-pub fn validity_val(v: Validity) -> DataValue {
-    DataValue::Validity(v)
+impl ToDataValue for Vector {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Vec(self.clone())
+    }
+}
+
+impl ToDataValue for Vec<u8> {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Bytes(self.clone())
+    }
+}
+
+impl ToDataValue for JsonData {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Json(self.clone())
+    }
+}
+
+impl ToDataValue for Validity {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Validity(*self)
+    }
+}
+
+impl ToDataValue for DataValue {
+    fn to_data_value(&self) -> DataValue {
+        self.clone()
+    }
+}
+
+impl ToDataValue for () {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Null
+    }
+}
+
+impl ToDataValue for usize {
+    fn to_data_value(&self) -> DataValue {
+        DataValue::Num(Num::Int(*self as i64))
+    }
+}
+
+pub fn val<V: ToDataValue>(v: V) -> DataValue {
+    v.to_data_value()
 }

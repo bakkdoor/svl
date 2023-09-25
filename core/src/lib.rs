@@ -1,5 +1,6 @@
 pub mod client;
 pub mod db;
+pub mod queries;
 pub mod stats;
 pub mod text;
 
