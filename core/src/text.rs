@@ -160,6 +160,12 @@ mod tests {
             Text::trim_latin_word(" habemus "),
             Some(Word::from("habemus"))
         );
+        assert_eq!(Text::trim_latin_word("<html>"), None);
+        assert_eq!(Text::trim_latin_word("<body>"), None);
+        assert_eq!(Text::trim_latin_word("<head>"), None);
+        assert_eq!(Text::trim_latin_word("</html>"), None);
+        assert_eq!(Text::trim_latin_word("</body>"), None);
+        assert_eq!(Text::trim_latin_word("</head>"), None);
         assert_eq!(Text::trim_latin_word("<p>"), None);
         assert_eq!(Text::trim_latin_word("<br/>"), None);
     }
