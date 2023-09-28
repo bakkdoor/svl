@@ -64,38 +64,50 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let prefix = args.get(0).unwrap();
-            texts_with_word_starting_with(db, prefix)
+            let limit = optional_limit(&args);
+            texts_with_word_starting_with(db, prefix, limit)
         }
         "ends" => {
             if args.is_empty() {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let suffix = args.get(0).unwrap();
-            words_ending_with(db, suffix)
+            let limit = optional_limit(&args);
+            words_ending_with(db, suffix, limit)
         }
         "ends-texts" => {
             if args.is_empty() {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let suffix = args.get(0).unwrap();
-            texts_with_word_ending_with(db, suffix)
+            let limit = optional_limit(&args);
+            texts_with_word_ending_with(db, suffix, limit)
         }
         "contains" => {
             if args.is_empty() {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let substring = args.get(0).unwrap();
-            words_containing(db, substring)
+            let limit = optional_limit(&args);
+            words_containing(db, substring, limit)
         }
         "contains-texts" => {
             if args.is_empty() {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let substring = args.get(0).unwrap();
-            texts_containing(db, substring)
+            let limit = optional_limit(&args);
+            texts_containing(db, substring, limit)
         }
         _ => Err(QueryError::UnknownQuery(cmd)),
     }
+}
+
+fn optional_limit(args: &[String]) -> Option<usize> {
+    args.get(1)
+        .map(|a| a.parse::<usize>())
+        .map(|a| a.ok())
+        .unwrap_or(None)
 }
 
 pub fn print_help() -> QueryResult {
@@ -111,23 +123,23 @@ pub fn print_help() -> QueryResult {
                 "Get top words ending with a suffix by count".into(),
             ],
             vec![
-                "/texts <prefix>".into(),
+                "/texts <prefix> ?<limit>".into(),
                 "Get texts with words starting with prefix".into(),
             ],
             vec![
-                "/ends <suffix>".into(),
+                "/ends <suffix> ?<limit>".into(),
                 "Get words ending with suffix".into(),
             ],
             vec![
-                "/ends-texts <suffix>".into(),
+                "/ends-texts <suffix> ?<limit>".into(),
                 "Get texts with words ending with suffix".into(),
             ],
             vec![
-                "/contains <substring>".into(),
+                "/contains <substring> ?<limit>".into(),
                 "Get words containing substring".into(),
             ],
             vec![
-                "/contains-texts <substring>".into(),
+                "/contains-texts <substring> ?<limit>".into(),
                 "Get texts containing substring".into(),
             ],
         ],
@@ -166,82 +178,86 @@ pub fn top_words_ending_with(db: &DBConnection, suffix: &str, limit: usize) -> Q
 }
 
 // get all texts that have a word starting with the given prefix
-pub fn texts_with_word_starting_with(db: &DBConnection, prefix: &str) -> QueryResult {
-    run_query(
-        db,
+pub fn texts_with_word_starting_with(
+    db: &DBConnection,
+    prefix: &str,
+    limit: Option<usize>,
+) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
         r#"
         ?[text_id, url] := *Text{text_id,url},
           *Word{word,count,text_id},
           starts_with(word, $prefix)
         "#,
-        DBParams::from_iter(vec![(
-            "prefix".into(),
-            prefix.to_lowercase().to_data_value(),
-        )]),
-    )
+        vec![("prefix".into(), prefix.to_lowercase().to_data_value())],
+        limit,
+    );
+
+    run_query(db, query.as_str(), params)
 }
 
 // get all words that end with the given suffix
-pub fn words_ending_with(db: &DBConnection, suffix: &str) -> QueryResult {
-    run_query(
-        db,
+pub fn words_ending_with(db: &DBConnection, suffix: &str, limit: Option<usize>) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
         r#"
         ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
           ends_with(word, $suffix),
           :sort -count(text_id), word
         "#,
-        DBParams::from_iter(vec![(
-            "suffix".into(),
-            suffix.to_lowercase().to_data_value(),
-        )]),
-    )
+        vec![("suffix".into(), suffix.to_lowercase().to_data_value())],
+        limit,
+    );
+
+    run_query(db, query.as_str(), DBParams::from_iter(params))
 }
 
 // get all texts that have a word ending with the given suffix
-pub fn texts_with_word_ending_with(db: &DBConnection, suffix: &str) -> QueryResult {
-    db.run_immutable(
+pub fn texts_with_word_ending_with(
+    db: &DBConnection,
+    suffix: &str,
+    limit: Option<usize>,
+) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
         r#"
         ?[text_id, url, text] := *Text{text_id,url,text},
           *Word{word,count,text_id},
           ends_with(word, $suffix)
         "#,
-        DBParams::from_iter(vec![(
-            "suffix".into(),
-            suffix.to_lowercase().to_data_value(),
-        )]),
-    )
-    .map_err(QueryError::from)
+        vec![("suffix".into(), suffix.to_lowercase().to_data_value())],
+        limit,
+    );
+
+    db.run_immutable(query.as_str(), DBParams::from_iter(params))
+        .map_err(QueryError::from)
 }
 
 // get all words that contain the given substring
-pub fn words_containing(db: &DBConnection, substring: &str) -> QueryResult {
-    run_query(
-        db,
+pub fn words_containing(db: &DBConnection, substring: &str, limit: Option<usize>) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
         r#"
         ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
           str_includes(word, $substring),
           :sort -count(text_id), word
         "#,
-        DBParams::from_iter(vec![(
-            "substring".into(),
-            substring.to_lowercase().to_data_value(),
-        )]),
-    )
+        vec![("substring".into(), substring.to_lowercase().to_data_value())],
+        limit,
+    );
+
+    run_query(db, query.as_str(), DBParams::from_iter(params))
 }
 
 // get all texts containing a substring (including multiple words)
-pub fn texts_containing(db: &DBConnection, substring: &str) -> QueryResult {
-    run_query(
-        db,
+pub fn texts_containing(db: &DBConnection, substring: &str, limit: Option<usize>) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
         r#"
         ?[text_id, url] := *Text{text_id,url,text},
           str_includes(text, $substring)
         "#,
-        DBParams::from_iter(vec![(
-            "substring".into(),
-            substring.to_lowercase().to_data_value(),
-        )]),
-    )
+        vec![("substring".into(), substring.to_lowercase().to_data_value())],
+        limit,
+    );
+
+    run_query(db, query.as_str(), params)
 }
 
 fn parse_query(query: &str) -> Result<(String, Vec<String>), QueryError> {
@@ -337,4 +353,20 @@ mod test {
 
         assert_eq!(parse_query(r#""#), Err(QueryError::EmptyQuery));
     }
+}
+
+fn query_with_optional_limit(
+    query: &str,
+    params: Vec<(String, crate::db::DataValue)>,
+    limit: Option<usize>,
+) -> (String, DBParams) {
+    let mut query = query.to_string();
+    let mut params = DBParams::from_iter(params);
+
+    if let Some(limit) = limit {
+        query.push_str(format!(":limit {}", limit).as_str());
+        params.insert("limit".into(), limit.to_data_value());
+    }
+
+    (query, params)
 }
