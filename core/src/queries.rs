@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
-use crate::db::{DBConnection, DBParams, ToDataValue};
-use cozo::NamedRows;
+use crate::db::{DBConnection, DBParams, DataValue, NamedRows, ToDataValue};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -25,7 +24,7 @@ pub enum QueryError {
     UnmatchedQuotes,
 }
 
-pub type QueryResult = Result<cozo::NamedRows, QueryError>;
+pub type QueryResult = Result<NamedRows, QueryError>;
 
 impl From<cozo::Error> for QueryError {
     fn from(error: cozo::Error) -> Self {
@@ -399,7 +398,7 @@ mod test {
 
 fn query_with_optional_limit(
     query: &str,
-    params: Vec<(String, crate::db::DataValue)>,
+    params: Vec<(String, DataValue)>,
     limit: Option<usize>,
 ) -> (String, DBParams) {
     let mut query = query.to_string();
