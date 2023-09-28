@@ -1,4 +1,5 @@
 use crate::db::{DBConnection, DBParams, ToDataValue};
+use cozo::NamedRows;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -79,13 +80,31 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
 }
 
 pub fn print_help() -> QueryResult {
-    println!("Available queries:");
-    println!("  top <prefix> <limit>");
-    println!("  texts <prefix>");
-    println!("  ends <suffix>");
-    println!("  ends-texts <suffix>");
-    println!("  contains <substring>");
-    Ok(Default::default())
+    Ok(NamedRows::new(
+        vec!["Available queries:".into(), "Description:".into()],
+        vec![
+            vec![
+                "/top <prefix> <limit>".into(),
+                "Get top words by count".into(),
+            ],
+            vec![
+                "/texts <prefix>".into(),
+                "Get texts with words starting with prefix".into(),
+            ],
+            vec![
+                "/ends <suffix>".into(),
+                "Get words ending with suffix".into(),
+            ],
+            vec![
+                "/ends-texts <suffix>".into(),
+                "Get texts with words ending with suffix".into(),
+            ],
+            vec![
+                "/contains <substring>".into(),
+                "Get words containing substring".into(),
+            ],
+        ],
+    ))
 }
 
 pub fn parse_query(query: &str) -> Result<(String, Vec<String>), QueryError> {
