@@ -138,7 +138,7 @@ async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> 
         author_texts.push(texts);
     }
 
-    assert!(author_texts.len() == authors.len());
+    assert_eq!(author_texts.len(), authors.len());
 
     for (idx, texts) in author_texts.into_iter().enumerate() {
         if let Some(author) = authors.get_mut(idx) {
