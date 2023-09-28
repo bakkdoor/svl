@@ -237,7 +237,7 @@ pub fn words_ending_with(db: &DBConnection, suffix: &str) -> QueryResult {
 pub fn texts_with_word_ending_with(db: &DBConnection, suffix: &str) -> QueryResult {
     let query = r#"
     ?[text_id, url, text] := *Text{text_id,url,text},
-      ?[word, count] := *Word{word,count,text_id},
+      *Word{word,count,text_id},
       ends_with(word, $suffix)
     "#;
 
