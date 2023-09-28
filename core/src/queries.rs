@@ -294,7 +294,7 @@ pub fn texts_with_word_starting_with(
         limit,
     );
 
-    run_query(db, query.as_str(), params)
+    run_query(db, &query, params)
 }
 
 // get all words that end with the given suffix
@@ -309,7 +309,7 @@ pub fn words_ending_with(db: &DBConnection, suffix: &str, limit: Option<usize>) 
         limit,
     );
 
-    run_query(db, query.as_str(), DBParams::from_iter(params))
+    run_query(db, &query, params)
 }
 
 // get all texts that have a word ending with the given suffix
@@ -328,8 +328,7 @@ pub fn texts_with_word_ending_with(
         limit,
     );
 
-    db.run_immutable(query.as_str(), DBParams::from_iter(params))
-        .map_err(QueryError::from)
+    run_query(db, &query, params)
 }
 
 // get all words that contain the given substring
@@ -344,7 +343,7 @@ pub fn words_containing(db: &DBConnection, substring: &str, limit: Option<usize>
         limit,
     );
 
-    run_query(db, query.as_str(), DBParams::from_iter(params))
+    run_query(db, &query, params)
 }
 
 // get all texts containing a substring (including multiple words)
@@ -358,7 +357,7 @@ pub fn texts_containing(db: &DBConnection, substring: &str, limit: Option<usize>
         limit,
     );
 
-    run_query(db, query.as_str(), params)
+    run_query(db, &query, params)
 }
 
 fn run_query(db: &DBConnection, query: &str, params: DBParams) -> QueryResult {
