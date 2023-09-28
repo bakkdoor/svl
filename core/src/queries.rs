@@ -47,6 +47,18 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
                 .unwrap_or(10);
             top_words_starting_with(db, prefix, limit)
         }
+        "top-ends" => {
+            if args.len() < 2 {
+                return Err(QueryError::MissingArgs(cmd, 2, args.len()));
+            }
+            let suffix = args.get(0).unwrap();
+            let limit: usize = args
+                .get(1)
+                .map(|a| a.parse::<usize>())
+                .map(|a| a.unwrap_or(10))
+                .unwrap_or(10);
+            top_words_ending_with(db, suffix, limit)
+        }
         "texts" => {
             if args.is_empty() {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
@@ -92,7 +104,11 @@ pub fn print_help() -> QueryResult {
         vec![
             vec![
                 "/top <prefix> <limit>".into(),
-                "Get top words by count".into(),
+                "Get top words starting with a prefix by count".into(),
+            ],
+            vec![
+                "/top-ends <suffix> <limit>".into(),
+                "Get top words ending with a suffix by count".into(),
             ],
             vec![
                 "/texts <prefix>".into(),
@@ -118,7 +134,117 @@ pub fn print_help() -> QueryResult {
     ))
 }
 
-pub fn parse_query(query: &str) -> Result<(String, Vec<String>), QueryError> {
+// get the top words by count across all texts that start with the given prefix
+pub fn top_words_starting_with(db: &DBConnection, prefix: &str, limit: usize) -> QueryResult {
+    run_query(
+        db,
+        r#"
+        ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
+          starts_with(word, $prefix),
+          :sort -count(text_id), word :limit $limit
+        "#,
+        DBParams::from_iter(vec![
+            ("prefix".into(), prefix.to_lowercase().to_data_value()),
+            ("limit".into(), limit.to_data_value()),
+        ]),
+    )
+}
+
+pub fn top_words_ending_with(db: &DBConnection, suffix: &str, limit: usize) -> QueryResult {
+    run_query(
+        db,
+        r#"
+        ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
+          ends_with(word, $suffix),
+          :sort -count(text_id), word :limit $limit
+        "#,
+        DBParams::from_iter(vec![
+            ("suffix".into(), suffix.to_lowercase().to_data_value()),
+            ("limit".into(), limit.to_data_value()),
+        ]),
+    )
+}
+
+// get all texts that have a word starting with the given prefix
+pub fn texts_with_word_starting_with(db: &DBConnection, prefix: &str) -> QueryResult {
+    run_query(
+        db,
+        r#"
+        ?[text_id, url] := *Text{text_id,url},
+          *Word{word,count,text_id},
+          starts_with(word, $prefix)
+        "#,
+        DBParams::from_iter(vec![(
+            "prefix".into(),
+            prefix.to_lowercase().to_data_value(),
+        )]),
+    )
+}
+
+// get all words that end with the given suffix
+pub fn words_ending_with(db: &DBConnection, suffix: &str) -> QueryResult {
+    run_query(
+        db,
+        r#"
+        ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
+          ends_with(word, $suffix),
+          :sort -count(text_id), word
+        "#,
+        DBParams::from_iter(vec![(
+            "suffix".into(),
+            suffix.to_lowercase().to_data_value(),
+        )]),
+    )
+}
+
+// get all texts that have a word ending with the given suffix
+pub fn texts_with_word_ending_with(db: &DBConnection, suffix: &str) -> QueryResult {
+    db.run_immutable(
+        r#"
+        ?[text_id, url, text] := *Text{text_id,url,text},
+          *Word{word,count,text_id},
+          ends_with(word, $suffix)
+        "#,
+        DBParams::from_iter(vec![(
+            "suffix".into(),
+            suffix.to_lowercase().to_data_value(),
+        )]),
+    )
+    .map_err(QueryError::from)
+}
+
+// get all words that contain the given substring
+pub fn words_containing(db: &DBConnection, substring: &str) -> QueryResult {
+    run_query(
+        db,
+        r#"
+        ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
+          str_includes(word, $substring),
+          :sort -count(text_id), word
+        "#,
+        DBParams::from_iter(vec![(
+            "substring".into(),
+            substring.to_lowercase().to_data_value(),
+        )]),
+    )
+}
+
+// get all texts containing a substring (including multiple words)
+pub fn texts_containing(db: &DBConnection, substring: &str) -> QueryResult {
+    run_query(
+        db,
+        r#"
+        ?[text_id, url] := *Text{text_id,url,text},
+          str_includes(text, $substring)
+        "#,
+        DBParams::from_iter(vec![(
+            "substring".into(),
+            substring.to_lowercase().to_data_value(),
+        )]),
+    )
+}
+
+fn parse_query(query: &str) -> Result<(String, Vec<String>), QueryError> {
     if query.trim().is_empty() {
         return Err(QueryError::EmptyQuery);
     }
@@ -177,113 +303,6 @@ pub fn parse_query(query: &str) -> Result<(String, Vec<String>), QueryError> {
 
 fn run_query(db: &DBConnection, query: &str, params: DBParams) -> QueryResult {
     db.run_immutable(query, params).map_err(QueryError::from)
-}
-
-// get the top words by count across all texts that start with the given prefix
-pub fn top_words_starting_with(db: &DBConnection, prefix: &str, limit: usize) -> QueryResult {
-    let query = r#"
-    ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
-      starts_with(word, $prefix),
-      :sort -count(text_id), word :limit $limit
-    "#;
-
-    run_query(
-        db,
-        query,
-        DBParams::from_iter(vec![
-            ("prefix".into(), prefix.to_lowercase().to_data_value()),
-            ("limit".into(), limit.to_data_value()),
-        ]),
-    )
-}
-
-// get all texts that have a word starting with the given prefix
-pub fn texts_with_word_starting_with(db: &DBConnection, prefix: &str) -> QueryResult {
-    let query = r#"
-    ?[text_id, url] := *Text{text_id,url},
-      *Word{word,count,text_id},
-      starts_with(word, $prefix)
-    "#;
-
-    run_query(
-        db,
-        query,
-        DBParams::from_iter(vec![(
-            "prefix".into(),
-            prefix.to_lowercase().to_data_value(),
-        )]),
-    )
-}
-
-// get all words that end with the given suffix
-pub fn words_ending_with(db: &DBConnection, suffix: &str) -> QueryResult {
-    let query = r#"
-    ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
-      ends_with(word, $suffix),
-      :sort -count(text_id), word
-    "#;
-
-    run_query(
-        db,
-        query,
-        DBParams::from_iter(vec![(
-            "suffix".into(),
-            suffix.to_lowercase().to_data_value(),
-        )]),
-    )
-}
-
-// get all texts that have a word ending with the given suffix
-pub fn texts_with_word_ending_with(db: &DBConnection, suffix: &str) -> QueryResult {
-    let query = r#"
-    ?[text_id, url, text] := *Text{text_id,url,text},
-      *Word{word,count,text_id},
-      ends_with(word, $suffix)
-    "#;
-
-    db.run_immutable(
-        query,
-        DBParams::from_iter(vec![(
-            "suffix".into(),
-            suffix.to_lowercase().to_data_value(),
-        )]),
-    )
-    .map_err(QueryError::from)
-}
-
-// get all words that contain the given substring
-pub fn words_containing(db: &DBConnection, substring: &str) -> QueryResult {
-    let query = r#"
-    ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
-      str_includes(word, $substring),
-      :sort -count(text_id), word
-    "#;
-
-    run_query(
-        db,
-        query,
-        DBParams::from_iter(vec![(
-            "substring".into(),
-            substring.to_lowercase().to_data_value(),
-        )]),
-    )
-}
-
-// get all texts containing a substring (including multiple words)
-pub fn texts_containing(db: &DBConnection, substring: &str) -> QueryResult {
-    let query = r#"
-    ?[text_id, url] := *Text{text_id,url,text},
-      str_includes(text, $substring)
-    "#;
-
-    run_query(
-        db,
-        query,
-        DBParams::from_iter(vec![(
-            "substring".into(),
-            substring.to_lowercase().to_data_value(),
-        )]),
-    )
 }
 
 #[cfg(test)]
