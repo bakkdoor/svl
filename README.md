@@ -4,6 +4,7 @@
 
 
 This repo implements various algorithms to analyze Latin texts and produce statistics about them.
+It uses [CozoDB](https://www.cozodb.org/) for storage and running queries against the data and [Rust](https://www.rust-lang.org/) for the overall implementation.
 
 It is a work in progress.
 
@@ -37,7 +38,7 @@ CozoDB is used to store the data using the rocksdb storage backend.
 ./target/release/svl create-db
 ```
 
-### Import texts from [https://thelatinlibrary.com](thelatinlibrary.com)
+### Import texts from [thelatinlibrary.com](https://thelatinlibrary.com)
 
 
 ```bash
