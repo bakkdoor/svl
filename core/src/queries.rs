@@ -33,21 +33,120 @@ impl From<cozo::Error> for QueryError {
     }
 }
 
-trait OptionalArg<T: FromStr> {
-    fn optional_at(&self, idx: usize) -> Option<T>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Query {
+    pub cmd: String,
+    pub args: Args,
 }
 
-impl<T: FromStr> OptionalArg<T> for Vec<String> {
-    fn optional_at(&self, idx: usize) -> Option<T> {
+impl Query {
+    pub fn new(cmd: String, args: Vec<String>) -> Self {
+        Self {
+            cmd,
+            args: Args { args },
+        }
+    }
+
+    pub fn parse(query: &str) -> Result<Self, QueryError> {
+        if query.trim().is_empty() {
+            return Err(QueryError::EmptyQuery);
+        }
+
+        let chars = query.chars().peekable();
+        let mut cmd = String::new();
+        let mut args = Args::new();
+        let mut current_arg = String::new();
+        let mut in_quotes = false;
+
+        // while let Some(c) = chars.next() {
+        for c in chars {
+            match c {
+                ' ' | '\t' if !in_quotes => {
+                    if !current_arg.is_empty() {
+                        if cmd.is_empty() {
+                            cmd = current_arg;
+                        } else {
+                            args.push(current_arg);
+                        }
+                        current_arg = String::new();
+                    }
+                }
+                '"' => {
+                    in_quotes = !in_quotes;
+                    if !in_quotes && !current_arg.is_empty() {
+                        if cmd.is_empty() {
+                            return Err(QueryError::MissingCommand);
+                        }
+                        args.push(current_arg);
+                        current_arg = String::new();
+                    }
+                }
+                _ => current_arg.push(c),
+            }
+        }
+
+        if in_quotes {
+            return Err(QueryError::UnmatchedQuotes);
+        }
+
+        if !current_arg.is_empty() {
+            if cmd.is_empty() {
+                cmd = current_arg;
+            } else {
+                args.push(current_arg);
+            }
+        }
+
+        if cmd.is_empty() {
+            return Err(QueryError::MissingCommand);
+        }
+
+        Ok(Self { cmd, args })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Args {
+    args: Vec<String>,
+}
+
+impl Args {
+    pub fn new() -> Self {
+        Self { args: Vec::new() }
+    }
+
+    pub fn push(&mut self, arg: String) {
+        self.args.push(arg);
+    }
+
+    pub fn get(&self, idx: usize) -> Option<&String> {
+        self.args.get(idx)
+    }
+
+    pub fn optional_at<T: FromStr>(&self, idx: usize) -> Option<T> {
         self.get(idx)
             .map(|a| a.parse::<T>())
             .map(|a| a.ok())
             .unwrap_or(None)
     }
+
+    pub fn len(&self) -> usize {
+        self.args.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.args.is_empty()
+    }
+}
+
+impl Default for Args {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
-    let (cmd, args) = parse_query(query)?;
+    let Query { cmd, args } = Query::parse(query)?;
     match cmd.as_str() {
         "help" => print_help(),
         "top" => {
@@ -55,11 +154,7 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
                 return Err(QueryError::MissingArgs(cmd, 2, args.len()));
             }
             let prefix = args.get(0).unwrap();
-            let limit: usize = args
-                .get(1)
-                .map(|a| a.parse::<usize>())
-                .map(|a| a.unwrap_or(10))
-                .unwrap_or(10);
+            let limit: usize = args.optional_at(1).unwrap_or(10);
             top_words_starting_with(db, prefix, limit)
         }
         "top-ends" => {
@@ -67,11 +162,7 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
                 return Err(QueryError::MissingArgs(cmd, 2, args.len()));
             }
             let suffix = args.get(0).unwrap();
-            let limit: usize = args
-                .get(1)
-                .map(|a| a.parse::<usize>())
-                .map(|a| a.unwrap_or(10))
-                .unwrap_or(10);
+            let limit: usize = args.optional_at(1).unwrap_or(10);
             top_words_ending_with(db, suffix, limit)
         }
         "texts" => {
@@ -268,63 +359,6 @@ pub fn texts_containing(db: &DBConnection, substring: &str, limit: Option<usize>
     run_query(db, query.as_str(), params)
 }
 
-fn parse_query(query: &str) -> Result<(String, Vec<String>), QueryError> {
-    if query.trim().is_empty() {
-        return Err(QueryError::EmptyQuery);
-    }
-
-    let chars = query.chars().peekable();
-    let mut cmd = String::new();
-    let mut args = Vec::new();
-    let mut current_arg = String::new();
-    let mut in_quotes = false;
-
-    // while let Some(c) = chars.next() {
-    for c in chars {
-        match c {
-            ' ' | '\t' if !in_quotes => {
-                if !current_arg.is_empty() {
-                    if cmd.is_empty() {
-                        cmd = current_arg;
-                    } else {
-                        args.push(current_arg);
-                    }
-                    current_arg = String::new();
-                }
-            }
-            '"' => {
-                in_quotes = !in_quotes;
-                if !in_quotes && !current_arg.is_empty() {
-                    if cmd.is_empty() {
-                        return Err(QueryError::MissingCommand);
-                    }
-                    args.push(current_arg);
-                    current_arg = String::new();
-                }
-            }
-            _ => current_arg.push(c),
-        }
-    }
-
-    if in_quotes {
-        return Err(QueryError::UnmatchedQuotes);
-    }
-
-    if !current_arg.is_empty() {
-        if cmd.is_empty() {
-            cmd = current_arg;
-        } else {
-            args.push(current_arg);
-        }
-    }
-
-    if cmd.is_empty() {
-        return Err(QueryError::MissingCommand);
-    }
-
-    Ok((cmd, args))
-}
-
 fn run_query(db: &DBConnection, query: &str, params: DBParams) -> QueryResult {
     db.run_immutable(query, params).map_err(QueryError::from)
 }
@@ -336,8 +370,8 @@ mod test {
     #[test]
     fn test_parse_query() {
         assert_eq!(
-            parse_query(r#"command "arg one" arg_two "arg three""#),
-            Ok((
+            Query::parse(r#"command "arg one" arg_two "arg three""#),
+            Ok(Query::new(
                 "command".to_string(),
                 vec![
                     "arg one".to_string(),
@@ -348,18 +382,18 @@ mod test {
         );
 
         assert_eq!(
-            parse_query(r#"command"#),
-            Ok(("command".to_string(), Vec::new()))
+            Query::parse(r#"command"#),
+            Ok(Query::new("command".to_string(), Vec::new()))
         );
 
-        assert_eq!(parse_query(r#""""#), Err(QueryError::MissingCommand));
+        assert_eq!(Query::parse(r#""""#), Err(QueryError::MissingCommand));
 
         assert_eq!(
-            parse_query(r#""unmatched"#),
+            Query::parse(r#""unmatched"#),
             Err(QueryError::UnmatchedQuotes)
         );
 
-        assert_eq!(parse_query(r#""#), Err(QueryError::EmptyQuery));
+        assert_eq!(Query::parse(r#""#), Err(QueryError::EmptyQuery));
     }
 }
 
