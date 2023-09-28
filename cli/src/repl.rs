@@ -10,7 +10,7 @@ use rustyline::{
 use rustyline_derive::{Completer, Helper, Highlighter, Hinter, Validator};
 
 use svl_core::db::DBConnection;
-use svl_core::queries::QueryError;
+use svl_core::queries::{Query, QueryError};
 use thiserror::Error;
 
 #[derive(Completer, Helper, Highlighter, Hinter, Validator)]
@@ -109,7 +109,7 @@ pub enum REPLError {
     IO(#[from] std::io::Error),
 
     #[error("QueryError: {0}")]
-    Query(QueryError),
+    Query(#[from] QueryError),
 }
 
 fn parse_eval_print(db: &DBConnection, counter: usize, code: &str) -> Result<(), REPLError> {
@@ -117,7 +117,8 @@ fn parse_eval_print(db: &DBConnection, counter: usize, code: &str) -> Result<(),
 
     if code.starts_with('/') {
         let code = code.trim_start_matches('/');
-        match svl_core::queries::eval(db, code) {
+        let query = Query::parse(code)?;
+        match query.eval(db) {
             Ok(named_rows) => {
                 return print_result_table(counter, named_rows);
             }

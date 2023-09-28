@@ -102,6 +102,73 @@ impl Query {
 
         Ok(Self { cmd, args })
     }
+
+    pub fn eval(&self, db: &DBConnection) -> QueryResult {
+        let Query { cmd, args } = self;
+        let cmd_str = cmd.as_str();
+        let cmd = cmd.clone();
+
+        match cmd_str {
+            "help" => print_help(),
+            "top" => {
+                if args.len() < 2 {
+                    return Err(QueryError::MissingArgs(cmd, 2, args.len()));
+                }
+                let prefix = args.get(0).unwrap();
+                let limit: usize = args.optional_at(1).unwrap_or(10);
+                top_words_starting_with(db, prefix, limit)
+            }
+            "top-ends" => {
+                if args.len() < 2 {
+                    return Err(QueryError::MissingArgs(cmd, 2, args.len()));
+                }
+                let suffix = args.get(0).unwrap();
+                let limit: usize = args.optional_at(1).unwrap_or(10);
+                top_words_ending_with(db, suffix, limit)
+            }
+            "texts" => {
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                }
+                let prefix = args.get(0).unwrap();
+                let limit = args.optional_at(1);
+                texts_with_word_starting_with(db, prefix, limit)
+            }
+            "ends" => {
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                }
+                let suffix = args.get(0).unwrap();
+                let limit = args.optional_at(1);
+                words_ending_with(db, suffix, limit)
+            }
+            "ends-texts" => {
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                }
+                let suffix = args.get(0).unwrap();
+                let limit = args.optional_at(1);
+                texts_with_word_ending_with(db, suffix, limit)
+            }
+            "contains" => {
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                }
+                let substring = args.get(0).unwrap();
+                let limit = args.optional_at(1);
+                words_containing(db, substring, limit)
+            }
+            "contains-texts" => {
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                }
+                let substring = args.get(0).unwrap();
+                let limit = args.optional_at(1);
+                texts_containing(db, substring, limit)
+            }
+            _ => Err(QueryError::UnknownQuery(cmd)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -141,70 +208,6 @@ impl Args {
 impl Default for Args {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
-    let Query { cmd, args } = Query::parse(query)?;
-    match cmd.as_str() {
-        "help" => print_help(),
-        "top" => {
-            if args.len() < 2 {
-                return Err(QueryError::MissingArgs(cmd, 2, args.len()));
-            }
-            let prefix = args.get(0).unwrap();
-            let limit: usize = args.optional_at(1).unwrap_or(10);
-            top_words_starting_with(db, prefix, limit)
-        }
-        "top-ends" => {
-            if args.len() < 2 {
-                return Err(QueryError::MissingArgs(cmd, 2, args.len()));
-            }
-            let suffix = args.get(0).unwrap();
-            let limit: usize = args.optional_at(1).unwrap_or(10);
-            top_words_ending_with(db, suffix, limit)
-        }
-        "texts" => {
-            if args.is_empty() {
-                return Err(QueryError::MissingArgs(cmd, 1, args.len()));
-            }
-            let prefix = args.get(0).unwrap();
-            let limit = args.optional_at(1);
-            texts_with_word_starting_with(db, prefix, limit)
-        }
-        "ends" => {
-            if args.is_empty() {
-                return Err(QueryError::MissingArgs(cmd, 1, args.len()));
-            }
-            let suffix = args.get(0).unwrap();
-            let limit = args.optional_at(1);
-            words_ending_with(db, suffix, limit)
-        }
-        "ends-texts" => {
-            if args.is_empty() {
-                return Err(QueryError::MissingArgs(cmd, 1, args.len()));
-            }
-            let suffix = args.get(0).unwrap();
-            let limit = args.optional_at(1);
-            texts_with_word_ending_with(db, suffix, limit)
-        }
-        "contains" => {
-            if args.is_empty() {
-                return Err(QueryError::MissingArgs(cmd, 1, args.len()));
-            }
-            let substring = args.get(0).unwrap();
-            let limit = args.optional_at(1);
-            words_containing(db, substring, limit)
-        }
-        "contains-texts" => {
-            if args.is_empty() {
-                return Err(QueryError::MissingArgs(cmd, 1, args.len()));
-            }
-            let substring = args.get(0).unwrap();
-            let limit = args.optional_at(1);
-            texts_containing(db, substring, limit)
-        }
-        _ => Err(QueryError::UnknownQuery(cmd)),
     }
 }
 
