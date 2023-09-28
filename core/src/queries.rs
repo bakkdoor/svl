@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::db::{DBConnection, DBParams, ToDataValue};
 use cozo::NamedRows;
 use thiserror::Error;
@@ -28,6 +30,19 @@ pub type QueryResult = Result<cozo::NamedRows, QueryError>;
 impl From<cozo::Error> for QueryError {
     fn from(error: cozo::Error) -> Self {
         Self::DBError(error.to_string())
+    }
+}
+
+trait OptionalArg<T: FromStr> {
+    fn optional_at(&self, idx: usize) -> Option<T>;
+}
+
+impl<T: FromStr> OptionalArg<T> for Vec<String> {
+    fn optional_at(&self, idx: usize) -> Option<T> {
+        self.get(idx)
+            .map(|a| a.parse::<T>())
+            .map(|a| a.ok())
+            .unwrap_or(None)
     }
 }
 
@@ -64,7 +79,7 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let prefix = args.get(0).unwrap();
-            let limit = optional_limit(&args);
+            let limit = args.optional_at(1);
             texts_with_word_starting_with(db, prefix, limit)
         }
         "ends" => {
@@ -72,7 +87,7 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let suffix = args.get(0).unwrap();
-            let limit = optional_limit(&args);
+            let limit = args.optional_at(1);
             words_ending_with(db, suffix, limit)
         }
         "ends-texts" => {
@@ -80,7 +95,7 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let suffix = args.get(0).unwrap();
-            let limit = optional_limit(&args);
+            let limit = args.optional_at(1);
             texts_with_word_ending_with(db, suffix, limit)
         }
         "contains" => {
@@ -88,7 +103,7 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let substring = args.get(0).unwrap();
-            let limit = optional_limit(&args);
+            let limit = args.optional_at(1);
             words_containing(db, substring, limit)
         }
         "contains-texts" => {
@@ -96,18 +111,11 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
                 return Err(QueryError::MissingArgs(cmd, 1, args.len()));
             }
             let substring = args.get(0).unwrap();
-            let limit = optional_limit(&args);
+            let limit = args.optional_at(1);
             texts_containing(db, substring, limit)
         }
         _ => Err(QueryError::UnknownQuery(cmd)),
     }
-}
-
-fn optional_limit(args: &[String]) -> Option<usize> {
-    args.get(1)
-        .map(|a| a.parse::<usize>())
-        .map(|a| a.ok())
-        .unwrap_or(None)
 }
 
 pub fn print_help() -> QueryResult {
