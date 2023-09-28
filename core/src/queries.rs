@@ -75,6 +75,13 @@ pub fn eval(db: &DBConnection, query: &str) -> QueryResult {
             let substring = args.get(0).unwrap();
             words_containing(db, substring)
         }
+        "contains-texts" => {
+            if args.is_empty() {
+                return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+            }
+            let substring = args.get(0).unwrap();
+            texts_containing(db, substring)
+        }
         _ => Err(QueryError::UnknownQuery(cmd)),
     }
 }
@@ -102,6 +109,10 @@ pub fn print_help() -> QueryResult {
             vec![
                 "/contains <substring>".into(),
                 "Get words containing substring".into(),
+            ],
+            vec![
+                "/contains-texts <substring>".into(),
+                "Get texts containing substring".into(),
             ],
         ],
     ))
@@ -246,6 +257,23 @@ pub fn words_containing(db: &DBConnection, substring: &str) -> QueryResult {
     ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
       str_includes(word, $substring),
       :sort -count(text_id), word
+    "#;
+
+    run_query(
+        db,
+        query,
+        DBParams::from_iter(vec![(
+            "substring".into(),
+            substring.to_lowercase().to_data_value(),
+        )]),
+    )
+}
+
+// get all texts containing a substring (including multiple words)
+pub fn texts_containing(db: &DBConnection, substring: &str) -> QueryResult {
+    let query = r#"
+    ?[text_id, url] := *Text{text_id,url,text},
+      str_includes(text, $substring)
     "#;
 
     run_query(
