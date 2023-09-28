@@ -16,12 +16,12 @@ impl DBConnection {
         Ok(Self { db })
     }
 
-    pub fn run_immutable(&self, script: &str, params: DBParams) -> Result<NamedRows, DBError> {
+    pub fn run_immutable(&self, script: &str, params: DBParams) -> DBResult {
         self.db
             .run_script(script, params, ScriptMutability::Immutable)
     }
 
-    pub fn run_mutable(&self, script: &str, params: DBParams) -> Result<NamedRows, DBError> {
+    pub fn run_mutable(&self, script: &str, params: DBParams) -> DBResult {
         self.db
             .run_script(script, params, ScriptMutability::Mutable)
     }

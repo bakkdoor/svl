@@ -10,6 +10,7 @@ use rustyline::{
 use rustyline_derive::{Completer, Helper, Highlighter, Hinter, Validator};
 
 use svl_core::db::DBConnection;
+use svl_core::queries::QueryError;
 use thiserror::Error;
 
 #[derive(Completer, Helper, Highlighter, Hinter, Validator)]
@@ -106,10 +107,30 @@ pub enum REPLError {
 
     #[error("IOError: {0}")]
     IO(#[from] std::io::Error),
+
+    #[error("QueryError: {0}")]
+    Query(QueryError),
 }
 
 fn parse_eval_print(db: &DBConnection, counter: usize, code: &str) -> Result<(), REPLError> {
     let params = Default::default();
+
+    if code.starts_with('/') {
+        let code = code.trim_start_matches('/');
+        match svl_core::queries::eval(db, code) {
+            Ok(named_rows) => {
+                return print_result_table(counter, named_rows);
+            }
+            Err(QueryError::UnknownQuery(query)) => {
+                println!("{counter:03} ❌ Unknown query: {query}");
+                return Ok(());
+            }
+            Err(e) => {
+                return print_query_error(counter, e);
+            }
+        }
+    }
+
     match db.run_mutable(code, params) {
         Ok(named_rows) => print_result_table(counter, named_rows),
         Err(e) => print_error(counter, e),
@@ -149,4 +170,9 @@ fn print_result_table(counter: usize, named_rows: cozo::NamedRows) -> Result<(),
 fn print_error(counter: usize, e: cozo::Error) -> Result<(), REPLError> {
     eprintln!("{counter:03} ❌ {e}\n");
     Err(REPLError::Cozo(e))
+}
+
+fn print_query_error(counter: usize, e: QueryError) -> Result<(), REPLError> {
+    eprintln!("{counter:03} ❌ {e}\n");
+    Err(REPLError::Query(e))
 }
