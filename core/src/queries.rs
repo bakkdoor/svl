@@ -47,7 +47,8 @@ impl Query {
     }
 
     pub fn parse(query: &str) -> Result<Self, QueryError> {
-        if query.trim().is_empty() {
+        let query = query.trim();
+        if query.is_empty() {
             return Err(QueryError::EmptyQuery);
         }
 
@@ -57,7 +58,6 @@ impl Query {
         let mut current_arg = String::new();
         let mut in_quotes = false;
 
-        // while let Some(c) = chars.next() {
         for c in chars {
             match c {
                 ' ' | '\t' if !in_quotes => {
