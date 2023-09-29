@@ -11,10 +11,6 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-// Stats about Latin words found in various texts
-// keeps track of:
-// - the (number of) words found in all texts
-// - the (number of) unique words found in all texts
 pub struct Stats {
     texts: Vec<Text>,
     word_count: usize,
