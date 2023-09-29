@@ -1,25 +1,36 @@
-top_words_starting_with[word, prefix, count, text_id] :=
-    *Word{word,count,text_id},
-    starts_with(word, prefix);
+top_words_starting_with[word, prefix, text_id, count] :=
+    *Word{ word, count, text_id },
+    prefix[prefix],
+    starts_with(word, prefix)
 
-texts_with_word_starting_with[text_id, count, url, prefix] :=
-    *Text{text_id,url},
-    *Word{word,count,text_id},
-    starts_with(word, prefix);
+texts_with_word_starting_with[text_id, word, count, url, prefix] :=
+    *Text{ text_id, url },
+    *Word{ word, text_id , count},
+    prefix[prefix],
+    starts_with(word, prefix)
 
-words_ending_with[suffix, count, text_id] :=
-    *Word{word,count,text_id},
-    ends_with(word, suffix);
+words_ending_with[word, suffix, text_id, count] :=
+    *Word{ word, count, text_id },
+    suffix[suffix],
+    ends_with(word, suffix)
 
-texts_with_word_starting_with[text_id, url, text, suffix] :=
-    *Text{text_id,url},
-    *Word{word,text_id},
-    ends_with(word, suffix);
+texts_with_word_ending_with[text_id, word, count, url, suffix] :=
+    *Text{ text_id, url },
+    *Word{ word, text_id, count },
+    suffix[suffix],
+    ends_with(word, suffix)
 
-words_containing[word, substring, count, text_id] :=
-    *Word{word,count,text_id},
-    str_includes(word, substring);
+words_containing[word, substr, text_id, count] :=
+    *Word{ word, count, text_id },
+    substring[substr],
+    str_includes(word, substr)
 
-texts_containing[text_id, url] :=
-    *Text{text_id,url,text},
-    str_includes(text, substring);
+texts_containing[text_id, substr, url] :=
+    *Text{ text_id, url, text },
+    substring[substr],
+    str_includes(text, substr)
+
+word_ends[word, suffix, text_id] :=
+    *Word{ word, text_id },
+    suffix[suffix],
+    ends_with(word, suffix)
