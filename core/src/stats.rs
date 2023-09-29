@@ -14,7 +14,6 @@ use crate::{
 pub struct Stats {
     texts: Vec<Text>,
     word_count: usize,
-    unique_word_count: usize,
     words: HashMap<Word, WordStats>,
 }
 
@@ -23,9 +22,12 @@ impl Stats {
         Stats {
             texts: Vec::new(),
             word_count: 0,
-            unique_word_count: 0,
             words: HashMap::new(),
         }
+    }
+
+    pub fn unique_word_count(&self) -> usize {
+        self.words.len()
     }
 
     pub fn add_text(&mut self, text: Text) {
@@ -55,9 +57,6 @@ impl Stats {
             .entry(word.clone())
             .or_insert_with(|| WordStats::new(text_id, word));
         word_stats.count_text(text_id);
-        if word_stats.global_count() == 1 {
-            self.unique_word_count += 1;
-        }
     }
 
     pub fn merge(&mut self, other: &Self) {
@@ -124,7 +123,7 @@ impl Default for Stats {
 impl Display for Stats {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Total words: {}", self.word_count)?;
-        writeln!(f, "Unique words: {}", self.unique_word_count)?;
+        writeln!(f, "Unique words: {}", self.unique_word_count())?;
         writeln!(f, "Texts: {}", self.texts.len())?;
         if std::env::var("SHOW_WORDS").is_ok() {
             writeln!(f, "Words:")?;
@@ -178,26 +177,38 @@ mod tests {
     #[test]
     fn add_text() {
         let mut stats = Stats::new();
-        let text = Text::new("URL".into(), "hello world test text".into());
+        let text = Text::new(
+            "URL".into(),
+            "Salvē amīcē, quōmodo tē hodiē habēs? Tē nunc vidēre possum.".into(),
+        );
         stats.add_text(text);
 
         assert_eq!(stats.texts.len(), 1);
-        assert_eq!(stats.word_count, 4);
-        assert_eq!(stats.unique_word_count, 4);
-        assert_eq!(stats.words.len(), 4);
-        assert_eq!(stats.words.get(&"hello".into()).unwrap().global_count(), 1);
-        assert_eq!(stats.words.get(&"world".into()).unwrap().global_count(), 1);
-        assert_eq!(stats.words.get(&"test".into()).unwrap().global_count(), 1);
-        assert_eq!(stats.words.get(&"text".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.word_count, 10);
+        assert_eq!(stats.unique_word_count(), 9);
+        assert_eq!(stats.words.get(&"salvē".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"amīcē".into()).unwrap().global_count(), 1);
+        assert_eq!(
+            stats.words.get(&"quōmodo".into()).unwrap().global_count(),
+            1
+        );
+        assert_eq!(stats.words.get(&"tē".into()).unwrap().global_count(), 2);
+        assert_eq!(stats.words.get(&"hodiē".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"habēs".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"nunc".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"vidēre".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"possum".into()).unwrap().global_count(), 1);
 
-        let text = Text::new("URL".into(), "more text is here?!".into());
+        let text = Text::new(
+            "URL".into(),
+            "Quid nunc? Tibi iam respondēre possum!".into(),
+        );
         stats.add_text(text);
 
         assert_eq!(stats.texts.len(), 2);
-        assert_eq!(stats.word_count, 8);
-        assert_eq!(stats.unique_word_count, 7);
-        assert_eq!(stats.words.len(), 7);
-        assert_eq!(stats.words.get(&"hello".into()).unwrap().global_count(), 1);
-        assert_eq!(stats.words.get(&"text".into()).unwrap().global_count(), 2);
+        assert_eq!(stats.word_count, 16);
+        assert_eq!(stats.unique_word_count(), 13);
+        assert_eq!(stats.words.get(&"quid".into()).unwrap().global_count(), 1);
+        assert_eq!(stats.words.get(&"possum".into()).unwrap().global_count(), 2);
     }
 }
