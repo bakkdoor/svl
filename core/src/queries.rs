@@ -387,6 +387,19 @@ mod test {
             Ok(Query::new("command".to_string(), Vec::new()))
         );
 
+        assert_eq!(
+            Query::parse(r#" some "command with" "some values   "  "#),
+            Ok(Query::new(
+                "some".to_string(),
+                vec!["command with".to_string(), "some values   ".to_string()]
+            ))
+        );
+
+        assert_eq!(
+            Query::parse(" \t \t command \t \t   "),
+            Ok(Query::new("command".to_string(), Vec::new()))
+        );
+
         assert_eq!(Query::parse(r#""""#), Err(QueryError::MissingCommand));
 
         assert_eq!(
