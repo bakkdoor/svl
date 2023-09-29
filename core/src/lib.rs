@@ -27,8 +27,10 @@ pub enum SVLError {
 
     #[error("IO error: {0:?}")]
     IOError(#[from] std::io::Error),
+
     #[error("Invalid state")]
     InvalidState,
+
     #[error("Unknown error: {0:?}")]
     Unknown(Option<String>),
 }
