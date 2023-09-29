@@ -58,6 +58,8 @@ pub fn run_repl(db: &DBConnection) -> anyhow::Result<()> {
     path_buf.push(".svl_history.txt");
     let history_file = path_buf.as_path();
 
+    let rules = svl_core::load_rules(None).unwrap_or("".to_string());
+
     if rl.load_history(history_file).is_err() {
         println!("No previous history.");
     }
@@ -68,7 +70,7 @@ pub fn run_repl(db: &DBConnection) -> anyhow::Result<()> {
         match readline {
             Ok(line) => {
                 rl.add_history_entry(line.as_str())?;
-                match parse_eval_print(db, counter, &line) {
+                match parse_eval_print(db, &rules, counter, &line) {
                     Ok(_) => {
                         continue;
                     }
@@ -112,7 +114,12 @@ pub enum REPLError {
     Query(#[from] QueryError),
 }
 
-fn parse_eval_print(db: &DBConnection, counter: usize, code: &str) -> Result<(), REPLError> {
+fn parse_eval_print(
+    db: &DBConnection,
+    rules: &str,
+    counter: usize,
+    code: &str,
+) -> Result<(), REPLError> {
     let params = Default::default();
 
     if code.starts_with('/') {
@@ -132,7 +139,8 @@ fn parse_eval_print(db: &DBConnection, counter: usize, code: &str) -> Result<(),
         }
     }
 
-    match db.run_mutable(code, params) {
+    let code = format!("{}\n{}", rules, code);
+    match db.run_mutable(&code, params) {
         Ok(named_rows) => print_result_table(counter, named_rows),
         Err(e) => print_error(counter, e),
     }
