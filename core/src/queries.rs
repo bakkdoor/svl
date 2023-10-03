@@ -166,6 +166,20 @@ impl Query {
                 let limit = args.optional_at(1);
                 texts_containing(db, substring, limit)
             }
+            // the remaining queries are also very useful:
+            "count-texts" => run_query(db, "?[count(text_id)] := *Text{text_id}", DBParams::new()),
+            "count-authors" => run_query(db, "?[count(name)] := *Author{name}", DBParams::new()),
+            "count-words" => run_query(
+                db,
+                "?[count(word), count_unique(word)] := *Word{word}",
+                DBParams::new(),
+            ),
+            "quit" | "exit" => std::process::exit(0),
+            "clear" => {
+                print!("\x1B[2J\x1B[1;1H");
+                Ok(NamedRows::new(Vec::new(), Vec::new()))
+            }
+            // catch-all for unknown queries
             _ => Err(QueryError::UnknownQuery(cmd)),
         }
     }
@@ -243,6 +257,21 @@ pub fn print_help() -> QueryResult {
                 "/contains-texts <substring> ?<limit>".into(),
                 "Get texts containing substring".into(),
             ],
+            vec![
+                "/count-texts".into(),
+                "Get the number of texts in the database".into(),
+            ],
+            vec![
+                "/count-authors".into(),
+                "Get the number of authors in the database".into(),
+            ],
+            vec![
+                "/count-words".into(),
+                "Get the number of words in the database".into(),
+            ],
+            vec!["/quit".into(), "Quit the program".into()],
+            vec!["/exit".into(), "Quit the program".into()],
+            vec!["/clear".into(), "Clear the screen".into()],
         ],
     ))
 }
