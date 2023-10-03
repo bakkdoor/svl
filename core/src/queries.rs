@@ -111,19 +111,19 @@ impl Query {
         match cmd_str {
             "help" => print_help(),
             "top" => {
-                if args.len() < 2 {
-                    return Err(QueryError::MissingArgs(cmd, 2, args.len()));
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
                 let prefix = args.get(0).unwrap();
-                let limit: usize = args.optional_at(1).unwrap_or(10);
+                let limit = args.optional_at(1);
                 top_words_starting_with(db, prefix, limit)
             }
             "top-ends" => {
-                if args.len() < 2 {
-                    return Err(QueryError::MissingArgs(cmd, 2, args.len()));
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
                 let suffix = args.get(0).unwrap();
-                let limit: usize = args.optional_at(1).unwrap_or(10);
+                let limit = args.optional_at(1);
                 top_words_ending_with(db, suffix, limit)
             }
             "texts" => {
@@ -216,11 +216,11 @@ pub fn print_help() -> QueryResult {
         vec!["Available queries:".into(), "Description:".into()],
         vec![
             vec![
-                "/top <prefix> <limit>".into(),
+                "/top <prefix> ?<limit>".into(),
                 "Get top words starting with a prefix by count".into(),
             ],
             vec![
-                "/top-ends <suffix> <limit>".into(),
+                "/top-ends <suffix> ?<limit>".into(),
                 "Get top words ending with a suffix by count".into(),
             ],
             vec![
@@ -248,34 +248,36 @@ pub fn print_help() -> QueryResult {
 }
 
 // get the top words by count across all texts that start with the given prefix
-pub fn top_words_starting_with(db: &DBConnection, prefix: &str, limit: usize) -> QueryResult {
-    run_query(
-        db,
+pub fn top_words_starting_with(
+    db: &DBConnection,
+    prefix: &str,
+    limit: Option<usize>,
+) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
         r#"
         ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
           starts_with(word, $prefix),
-          :sort -count(text_id), word :limit $limit
+          :sort -count(text_id), word
         "#,
-        DBParams::from_iter(vec![
-            ("prefix".into(), prefix.to_lowercase().to_data_value()),
-            ("limit".into(), limit.to_data_value()),
-        ]),
-    )
+        vec![("prefix".into(), prefix.to_lowercase().to_data_value())],
+        limit,
+    );
+
+    run_query(db, &query, params)
 }
 
-pub fn top_words_ending_with(db: &DBConnection, suffix: &str, limit: usize) -> QueryResult {
-    run_query(
-        db,
+pub fn top_words_ending_with(db: &DBConnection, suffix: &str, limit: Option<usize>) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
         r#"
         ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
           ends_with(word, $suffix),
-          :sort -count(text_id), word :limit $limit
+          :sort -count(text_id), word
         "#,
-        DBParams::from_iter(vec![
-            ("suffix".into(), suffix.to_lowercase().to_data_value()),
-            ("limit".into(), limit.to_data_value()),
-        ]),
-    )
+        vec![("suffix".into(), suffix.to_lowercase().to_data_value())],
+        limit,
+    );
+
+    run_query(db, &query, params)
 }
 
 // get all texts that have a word starting with the given prefix
