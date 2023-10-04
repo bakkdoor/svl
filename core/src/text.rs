@@ -179,8 +179,8 @@ mod tests {
         );
 
         assert_eq!(
-            text(". Quomodo est?").words().collect::<Vec<_>>(),
-            vec![Word::from("quomodo"), Word::from("est")]
+            text(". Quōmodo est?").words().collect::<Vec<_>>(),
+            vec![Word::from("quōmodo"), Word::from("est")]
         );
 
         assert_eq!(
