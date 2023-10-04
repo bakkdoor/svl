@@ -1,6 +1,6 @@
 # Statistica Verbōrum Latīna
 
-[![CI](https://github.com/bakkdoor/statistica-verborum-latina/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bakkdoor/statistica-verborum-latina/actions/workflows/ci.yml)
+[![CI](https://github.com/bakkdoor/svl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bakkdoor/svl/actions/workflows/ci.yml)
 
 
 This repo implements various algorithms to analyze Latin texts found on [thelatinlibrary.com](https://thelatinlibrary.com) and produce statistics about them.
@@ -16,8 +16,8 @@ Make sure you have Rust installed. If not, you can install it from [here](https:
 Then, clone this repository and build the project:
 
 ```bash
-git clone https://github.com/bakkdoor/statistica-verborum-latina.git
-cd statistica-verborum-latina
+git clone https://github.com/bakkdoor/svl.git
+cd svl
 cargo build --release
 ```
 
