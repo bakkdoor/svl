@@ -18,17 +18,12 @@ pub enum Message {
     SearchKindChanged(SearchKind),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SearchKind {
     Author,
     Text,
+    #[default]
     Word,
-}
-
-impl Default for SearchKind {
-    fn default() -> Self {
-        SearchKind::Word
-    }
 }
 
 impl std::fmt::Display for SearchKind {
@@ -67,22 +62,12 @@ impl<Result> Default for SearchState<Result> {
     }
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct SearchApp {
     current_search_kind: SearchKind,
     author_search: SearchState<text::Author>,
     text_search: SearchState<text::Text>,
     word_search: SearchState<text::Word>,
-}
-
-impl Default for SearchApp {
-    fn default() -> Self {
-        Self {
-            current_search_kind: SearchKind::default(),
-            author_search: SearchState::default(),
-            text_search: SearchState::default(),
-            word_search: SearchState::default(),
-        }
-    }
 }
 
 impl SearchApp {
@@ -157,8 +142,7 @@ impl Sandbox for SearchApp {
 
     fn view(&self) -> Element<Self::Message> {
         let search_term: String = self.search_term();
-        let input =
-            TextInput::new("Search...", &search_term).on_input(|term| Message::InputChanged(term));
+        let input = TextInput::new("Search...", &search_term).on_input(Message::InputChanged);
 
         let pick_list = PickList::new(
             vec![SearchKind::Word, SearchKind::Author, SearchKind::Text],
