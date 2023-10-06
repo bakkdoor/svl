@@ -9,7 +9,7 @@ It uses [CozoDB](https://www.cozodb.org/) for storage and querying (using its Da
 It is a work in progress.
 
 
-## Installation
+## Build
 
 Make sure you have Rust installed. If not, you can install it from [here](https://www.rust-lang.org/tools/install).
 
@@ -22,6 +22,20 @@ cargo build --release
 ```
 
 The executable will be in the `./target/release` directory.
+
+## Installation
+
+You can install svl using cargo from this directory with:
+
+```bash
+cargo install --path .
+```
+
+Or directly (without the need for cloning the repository) with:
+
+```bash
+cargo install --git https://github.com/bakkdoor/svl.git
+```
 
 ## Usage
 
