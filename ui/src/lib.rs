@@ -1,4 +1,4 @@
-use iced::{widget::text, Element, Sandbox, Settings};
+use iced::{widget::text, Element, Sandbox, Settings, Theme};
 use svl_core::db::DBConnection;
 
 pub fn run_ui(_db: &DBConnection) -> iced::Result {
@@ -49,5 +49,9 @@ impl Sandbox for App {
 
     fn view(&self) -> Element<Message> {
         text("Hello, world!").into()
+    }
+
+    fn theme(&self) -> Theme {
+        Theme::Dark
     }
 }
