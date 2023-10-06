@@ -28,6 +28,9 @@ enum CLICommand {
 
     #[clap(about = "Run interactive REPL")]
     Repl,
+
+    #[clap(about = "Run interactive UI")]
+    Ui,
 }
 
 #[tokio::main]
@@ -47,6 +50,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
         CLICommand::Repl => {
             repl::run_repl(&db)?;
+        }
+        CLICommand::Ui => {
+            svl_ui::run_ui(&db)?;
         }
     }
 
