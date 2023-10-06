@@ -49,18 +49,18 @@ CozoDB is used to store the data using the rocksdb storage backend.
 ### Create Cozo Graph DB with schema
 
 ```bash
-./target/release/svl create-db
+svl create-db
 ```
 
 ### Import texts from [thelatinlibrary.com](https://thelatinlibrary.com)
 
 
 ```bash
-./target/release/svl import-library
+svl import-library
 ```
 
 ### Run REPL to query DB interactively via CLI
 
 ```bash
-./target/release/svl repl
+svl repl
 ```
