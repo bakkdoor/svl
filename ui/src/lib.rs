@@ -1,6 +1,6 @@
 use iced::{
     widget::{Column, Container, PickList, Text, TextInput},
-    Element, Sandbox, Settings, Theme,
+    Application, Command, Element, Settings, Theme,
 };
 use svl_core::{db::DBConnection, text};
 
@@ -114,29 +114,35 @@ impl SearchApp {
     }
 }
 
-impl Sandbox for SearchApp {
+impl Application for SearchApp {
+    type Executor = iced::executor::Default;
+    type Theme = Theme;
     type Message = Message;
+    type Flags = ();
 
-    fn new() -> Self {
-        Self::default()
+    fn new(_flags: ()) -> (Self, Command<Message>) {
+        (Self::default(), Command::none())
     }
 
     fn title(&self) -> String {
         String::from("Search App")
     }
 
-    fn update(&mut self, message: Self::Message) {
+    fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::InputChanged(term) => {
                 self.update_search(&term);
+                Command::none()
             }
             Message::Search => {
                 // Implement the actual search logic here based on self.search_term
+                Command::none()
             }
             Message::SearchKindChanged(kind) => {
                 self.current_search_kind = kind;
+                Command::none()
             }
-            _ => {}
+            _ => Command::none(),
         }
     }
 
