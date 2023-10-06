@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
-use crate::db::{DBConnection, DBParams, DataValue, NamedRows, ToDataValue};
+use crate::{
+    db::{DBConnection, DBParams, DataValue, NamedRows, ToDataValue},
+    text::TextId,
+};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -174,6 +177,27 @@ impl Query {
                 "?[count(word), count_unique(word)] := *Word{word}",
                 DBParams::new(),
             ),
+            "word" => {
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                }
+                let word = args.get(0).unwrap();
+                word_info(db, word, args.optional_at(1))
+            }
+            "text" => {
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                }
+                let text_id = TextId::from(args.get(0).unwrap().parse::<usize>().unwrap());
+                text_info(db, text_id, args.optional_at(1))
+            }
+            "author" => {
+                if args.is_empty() {
+                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                }
+                let name = args.get(0).unwrap();
+                author_info(db, name, args.optional_at(1))
+            }
             "quit" | "exit" => std::process::exit(0),
             "clear" => {
                 print!("\x1B[2J\x1B[1;1H");
@@ -269,6 +293,9 @@ pub fn print_help() -> QueryResult {
                 "/count-words".into(),
                 "Get the number of words in the database".into(),
             ],
+            vec!["/word <word>".into(), "Get all info for a word".into()],
+            vec!["/text <text_id>".into(), "Get all info for a text".into()],
+            vec!["/author <name>".into(), "Get all info for an author".into()],
             vec!["/quit".into(), "Quit the program".into()],
             vec!["/exit".into(), "Quit the program".into()],
             vec!["/clear".into(), "Clear the screen".into()],
@@ -385,6 +412,52 @@ pub fn texts_containing(db: &DBConnection, substring: &str, limit: Option<usize>
           str_includes(text, $substring)
         "#,
         vec![("substring".into(), substring.to_lowercase().to_data_value())],
+        limit,
+    );
+
+    run_query(db, &query, params)
+}
+
+pub fn word_info(db: &DBConnection, word: &str, limit: Option<usize>) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
+        r#"
+        ?[word, count, text_id] :=
+            *Word{word,count,text_id},
+            word = $word
+        "#,
+        vec![("word".into(), word.to_lowercase().to_data_value())],
+        limit,
+    );
+
+    run_query(db, &query, params)
+}
+
+pub fn text_info(db: &DBConnection, text_id: TextId, limit: Option<usize>) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
+        r#"
+        ?[text_id, author_name, url, text_length, count(word)] :=
+            text_id = $text_id,
+            *Author{author_id, name: author_name},
+            *Text{text_id, url, text, author_id},
+            *Word{word, text_id},
+            text_length = length(text)
+        "#,
+        vec![("text_id".into(), text_id.to_data_value())],
+        limit,
+    );
+
+    run_query(db, &query, params)
+}
+
+pub fn author_info(db: &DBConnection, name: &str, limit: Option<usize>) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
+        r#"
+        ?[name, author_id, unique(text_id)] :=
+            *Author{name, author_id},
+            *Text{text_id, author_id},
+            name = $name
+        "#,
+        vec![("name".into(), name.to_data_value())],
         limit,
     );
 
