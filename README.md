@@ -64,3 +64,9 @@ svl import-library
 ```bash
 svl repl
 ```
+
+
+### Run custom UI to query DB interactively
+```bash
+svl ui
+```

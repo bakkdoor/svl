@@ -3,6 +3,13 @@ use std::fmt::Display;
 
 use crate::db::{DataValue, Num, ToDataValue};
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Author {
+    author_id: usize,
+    name: String,
+    url: String,
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TextId(usize);
 
