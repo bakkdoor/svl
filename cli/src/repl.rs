@@ -46,7 +46,14 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn run_repl(db: &DBConnection) -> anyhow::Result<()> {
     println!("📖 Statistica Verbōrum Latīna REPL {VERSION} 📚");
     println!(
-        "Enter CozoDB Datalog scripts / queries below. You can add new lines via SHIFT-DOWN.\n"
+        "{}",
+        [
+            "",
+            "Enter CozoDB Datalog scripts / queries below. You can add new lines via SHIFT-DOWN.",
+            "View predefined queries and commands with /help.",
+            ""
+        ]
+        .join("\n")
     );
 
     let mut counter = 0usize;
