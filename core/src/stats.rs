@@ -1,9 +1,8 @@
+use serde_derive::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
 };
-
-use serde_derive::{Deserialize, Serialize};
 
 use crate::{
     db::{val, DBConnection, DBParams},
@@ -65,7 +64,7 @@ impl Stats {
         }
     }
 
-    pub fn store_in_db(&self, db: &DBConnection) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn store_in_db(&self, db: &DBConnection) -> Result<(), Box<dyn std::error::Error>> {
         println!("Storing Stats in DB");
         let tx = db.multi_tx(true);
 
@@ -109,7 +108,7 @@ impl Stats {
                 )?;
             }
         }
-        tx.commit()?;
+        tx.commit().await?;
         Ok(())
     }
 }

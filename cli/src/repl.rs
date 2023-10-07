@@ -43,7 +43,7 @@ fn validated_editor() -> Result<Editor<InputValidator, FileHistory>, ReadlineErr
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub fn run_repl(db: &DBConnection) -> anyhow::Result<()> {
+pub async fn run_repl(db: &DBConnection) -> Result<(), Box<dyn std::error::Error>> {
     println!("📖 Statistica Verbōrum Latīna REPL {VERSION} 📚");
     println!(
         "{}",
@@ -77,7 +77,7 @@ pub fn run_repl(db: &DBConnection) -> anyhow::Result<()> {
         match readline {
             Ok(line) => {
                 rl.add_history_entry(line.as_str())?;
-                match parse_eval_print(db, &rules, counter, &line) {
+                match parse_eval_print(db, &rules, counter, &line).await {
                     Ok(_) => {
                         continue;
                     }
@@ -121,7 +121,7 @@ pub enum REPLError {
     Query(#[from] QueryError),
 }
 
-fn parse_eval_print(
+async fn parse_eval_print(
     db: &DBConnection,
     rules: &str,
     counter: usize,
@@ -132,7 +132,7 @@ fn parse_eval_print(
     if code.starts_with('/') {
         let code = code.trim_start_matches('/');
         let query = Query::parse(code)?;
-        match query.eval(db) {
+        match query.eval(db).await {
             Ok(named_rows) => {
                 return print_result_table(counter, named_rows);
             }
@@ -147,7 +147,7 @@ fn parse_eval_print(
     }
 
     let code = format!("{}\n{}", rules, code);
-    match db.run_mutable(&code, params) {
+    match db.run_mutable(&code, params).await {
         Ok(named_rows) => print_result_table(counter, named_rows),
         Err(e) => print_error(counter, e),
     }

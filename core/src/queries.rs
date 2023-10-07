@@ -106,7 +106,7 @@ impl Query {
         Ok(Self { cmd, args })
     }
 
-    pub fn eval(&self, db: &DBConnection) -> QueryResult {
+    pub async fn eval(&self, db: &DBConnection) -> QueryResult {
         let Query { cmd, args } = self;
         let cmd_str = cmd.as_str();
         let cmd = cmd.clone();
@@ -119,7 +119,7 @@ impl Query {
                 }
                 let prefix = args.get(0).unwrap();
                 let limit = args.optional_at(1);
-                top_words_starting_with(db, prefix, limit)
+                top_words_starting_with(db, prefix, limit).await
             }
             "top-ends" => {
                 if args.is_empty() {
@@ -127,7 +127,7 @@ impl Query {
                 }
                 let suffix = args.get(0).unwrap();
                 let limit = args.optional_at(1);
-                top_words_ending_with(db, suffix, limit)
+                top_words_ending_with(db, suffix, limit).await
             }
             "texts" => {
                 if args.is_empty() {
@@ -135,7 +135,7 @@ impl Query {
                 }
                 let prefix = args.get(0).unwrap();
                 let limit = args.optional_at(1);
-                texts_with_word_starting_with(db, prefix, limit)
+                texts_with_word_starting_with(db, prefix, limit).await
             }
             "ends" => {
                 if args.is_empty() {
@@ -143,7 +143,7 @@ impl Query {
                 }
                 let suffix = args.get(0).unwrap();
                 let limit = args.optional_at(1);
-                words_ending_with(db, suffix, limit)
+                words_ending_with(db, suffix, limit).await
             }
             "ends-texts" => {
                 if args.is_empty() {
@@ -151,7 +151,7 @@ impl Query {
                 }
                 let suffix = args.get(0).unwrap();
                 let limit = args.optional_at(1);
-                texts_with_word_ending_with(db, suffix, limit)
+                texts_with_word_ending_with(db, suffix, limit).await
             }
             "contains" => {
                 if args.is_empty() {
@@ -159,7 +159,7 @@ impl Query {
                 }
                 let substring = args.get(0).unwrap();
                 let limit = args.optional_at(1);
-                words_containing(db, substring, limit)
+                words_containing(db, substring, limit).await
             }
             "contains-texts" => {
                 if args.is_empty() {
@@ -167,36 +167,43 @@ impl Query {
                 }
                 let substring = args.get(0).unwrap();
                 let limit = args.optional_at(1);
-                texts_containing(db, substring, limit)
+                texts_containing(db, substring, limit).await
             }
             // the remaining queries are also very useful:
-            "count-texts" => run_query(db, "?[count(text_id)] := *Text{text_id}", DBParams::new()),
-            "count-authors" => run_query(db, "?[count(name)] := *Author{name}", DBParams::new()),
-            "count-words" => run_query(
-                db,
-                "?[count(word), count_unique(word)] := *Word{word}",
-                DBParams::new(),
-            ),
+            "count-texts" => {
+                run_query(db, "?[count(text_id)] := *Text{text_id}", DBParams::new()).await
+            }
+            "count-authors" => {
+                run_query(db, "?[count(name)] := *Author{name}", DBParams::new()).await
+            }
+            "count-words" => {
+                run_query(
+                    db,
+                    "?[count(word), count_unique(word)] := *Word{word}",
+                    DBParams::new(),
+                )
+                .await
+            }
             "word" => {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
                 let word = args.get(0).unwrap();
-                word_info(db, word, args.optional_at(1))
+                word_info(db, word, args.optional_at(1)).await
             }
             "text" => {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
                 let text_id = TextId::from(args.get(0).unwrap().parse::<usize>().unwrap());
-                text_info(db, text_id, args.optional_at(1))
+                text_info(db, text_id, args.optional_at(1)).await
             }
             "author" => {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
                 let name = args.get(0).unwrap();
-                author_info(db, name, args.optional_at(1))
+                author_info(db, name, args.optional_at(1)).await
             }
             "quit" | "exit" => std::process::exit(0),
             "clear" => {
@@ -304,7 +311,7 @@ pub fn print_help() -> QueryResult {
 }
 
 // get the top words by count across all texts that start with the given prefix
-pub fn top_words_starting_with(
+pub async fn top_words_starting_with(
     db: &DBConnection,
     prefix: &str,
     limit: Option<usize>,
@@ -319,10 +326,14 @@ pub fn top_words_starting_with(
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
-pub fn top_words_ending_with(db: &DBConnection, suffix: &str, limit: Option<usize>) -> QueryResult {
+pub async fn top_words_ending_with(
+    db: &DBConnection,
+    suffix: &str,
+    limit: Option<usize>,
+) -> QueryResult {
     let (query, params) = query_with_optional_limit(
         r#"
         ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
@@ -333,11 +344,11 @@ pub fn top_words_ending_with(db: &DBConnection, suffix: &str, limit: Option<usiz
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
 // get all texts that have a word starting with the given prefix
-pub fn texts_with_word_starting_with(
+pub async fn texts_with_word_starting_with(
     db: &DBConnection,
     prefix: &str,
     limit: Option<usize>,
@@ -352,11 +363,15 @@ pub fn texts_with_word_starting_with(
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
 // get all words that end with the given suffix
-pub fn words_ending_with(db: &DBConnection, suffix: &str, limit: Option<usize>) -> QueryResult {
+pub async fn words_ending_with(
+    db: &DBConnection,
+    suffix: &str,
+    limit: Option<usize>,
+) -> QueryResult {
     let (query, params) = query_with_optional_limit(
         r#"
         ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
@@ -367,11 +382,11 @@ pub fn words_ending_with(db: &DBConnection, suffix: &str, limit: Option<usize>) 
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
 // get all texts that have a word ending with the given suffix
-pub fn texts_with_word_ending_with(
+pub async fn texts_with_word_ending_with(
     db: &DBConnection,
     suffix: &str,
     limit: Option<usize>,
@@ -386,11 +401,15 @@ pub fn texts_with_word_ending_with(
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
 // get all words that contain the given substring
-pub fn words_containing(db: &DBConnection, substring: &str, limit: Option<usize>) -> QueryResult {
+pub async fn words_containing(
+    db: &DBConnection,
+    substring: &str,
+    limit: Option<usize>,
+) -> QueryResult {
     let (query, params) = query_with_optional_limit(
         r#"
         ?[word, sum(count), count(text_id)] := *Word{word,count,text_id},
@@ -401,11 +420,15 @@ pub fn words_containing(db: &DBConnection, substring: &str, limit: Option<usize>
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
 // get all texts containing a substring (including multiple words)
-pub fn texts_containing(db: &DBConnection, substring: &str, limit: Option<usize>) -> QueryResult {
+pub async fn texts_containing(
+    db: &DBConnection,
+    substring: &str,
+    limit: Option<usize>,
+) -> QueryResult {
     let (query, params) = query_with_optional_limit(
         r#"
         ?[text_id, url] := *Text{text_id,url,text},
@@ -415,10 +438,10 @@ pub fn texts_containing(db: &DBConnection, substring: &str, limit: Option<usize>
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
-pub fn word_info(db: &DBConnection, word: &str, limit: Option<usize>) -> QueryResult {
+pub async fn word_info(db: &DBConnection, word: &str, limit: Option<usize>) -> QueryResult {
     let (query, params) = query_with_optional_limit(
         r#"
         ?[word, count, text_id] :=
@@ -429,10 +452,10 @@ pub fn word_info(db: &DBConnection, word: &str, limit: Option<usize>) -> QueryRe
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
-pub fn text_info(db: &DBConnection, text_id: TextId, limit: Option<usize>) -> QueryResult {
+pub async fn text_info(db: &DBConnection, text_id: TextId, limit: Option<usize>) -> QueryResult {
     let (query, params) = query_with_optional_limit(
         r#"
         ?[text_id, author_name, url, text_length, count(word)] :=
@@ -446,10 +469,10 @@ pub fn text_info(db: &DBConnection, text_id: TextId, limit: Option<usize>) -> Qu
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
-pub fn author_info(db: &DBConnection, name: &str, limit: Option<usize>) -> QueryResult {
+pub async fn author_info(db: &DBConnection, name: &str, limit: Option<usize>) -> QueryResult {
     let (query, params) = query_with_optional_limit(
         r#"
         ?[name, author_id, unique(text_id)] :=
@@ -461,11 +484,13 @@ pub fn author_info(db: &DBConnection, name: &str, limit: Option<usize>) -> Query
         limit,
     );
 
-    run_query(db, &query, params)
+    run_query(db, &query, params).await
 }
 
-fn run_query(db: &DBConnection, query: &str, params: DBParams) -> QueryResult {
-    db.run_immutable(query, params).map_err(QueryError::from)
+async fn run_query(db: &DBConnection, query: &str, params: DBParams) -> QueryResult {
+    db.run_immutable(query, params)
+        .await
+        .map_err(QueryError::from)
 }
 
 #[cfg(test)]

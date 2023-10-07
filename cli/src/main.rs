@@ -36,7 +36,7 @@ enum CLICommand {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    let db = DBConnection::new()?;
+    let db = DBConnection::new().await?;
 
     match cli.command {
         CLICommand::CreateDB => {
@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             delete_filtered_words(&db).await?;
         }
         CLICommand::Repl => {
-            repl::run_repl(&db)?;
+            repl::run_repl(&db).await?;
         }
         CLICommand::Ui => {
             svl_ui::run_ui(&db)?;
@@ -79,7 +79,7 @@ async fn create_schema(db: &DBConnection) -> Result<(), Box<dyn Error>> {
         Default::default(),
     )?;
 
-    tx.commit()?;
+    tx.commit().await?;
 
     println!("Success. DB saved to svl-stats.db");
 
@@ -103,7 +103,7 @@ async fn delete_filtered_words(db: &DBConnection) -> Result<(), Box<dyn Error>> 
         Default::default(),
     )?;
 
-    tx.commit()?;
+    tx.commit().await?;
 
     Ok(())
 }
@@ -135,7 +135,7 @@ async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> 
         )?;
     }
 
-    tx.commit()?;
+    tx.commit().await?;
 
     // collect text futures and set on corresponding author
     let mut author_texts: Vec<Vec<TextInfo>> = Vec::with_capacity(authors.len());
@@ -178,7 +178,7 @@ async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> 
         stats.add_text(text);
     }
 
-    stats.store_in_db(db)?;
+    stats.store_in_db(db).await?;
 
     println!("Final stats: {}", stats);
     Ok(())

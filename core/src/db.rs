@@ -1,33 +1,70 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::{Arc, Mutex};
+use tokio::task;
 
-pub use cozo::{DataValue, Error as DBError, JsonData, NamedRows, Num, Validity, Vector};
+pub use cozo::{
+    DataValue, Error as DBError, JsonData, MultiTransaction, NamedRows, Num, Validity, Vector,
+};
 use cozo::{DbInstance, ScriptMutability};
 
 pub type DBResult = Result<NamedRows, DBError>;
 pub type DBParams = BTreeMap<String, DataValue>;
 
 pub struct DBConnection {
-    db: DbInstance,
+    db: Arc<Mutex<DbInstance>>,
 }
 
 impl DBConnection {
-    pub fn new() -> Result<Self, String> {
+    pub async fn new() -> Result<Self, String> {
         let db = DbInstance::new_with_str("rocksdb", "svl-stats.db", Default::default())?;
-        Ok(Self { db })
+        Ok(Self {
+            db: Arc::new(Mutex::new(db)),
+        })
     }
 
-    pub fn run_immutable(&self, script: &str, params: DBParams) -> DBResult {
-        self.db
-            .run_script(script, params, ScriptMutability::Immutable)
+    pub async fn run_immutable(&self, script: &str, params: DBParams) -> DBResult {
+        let db = Arc::clone(&self.db);
+        let script = script.to_string();
+        let params = params.clone();
+        task::spawn_blocking(move || {
+            let db = db.lock().unwrap();
+            db.run_script(&script, params, ScriptMutability::Immutable)
+        })
+        .await
+        .unwrap()
     }
 
-    pub fn run_mutable(&self, script: &str, params: DBParams) -> DBResult {
-        self.db
-            .run_script(script, params, ScriptMutability::Mutable)
+    pub async fn run_mutable(&self, script: &str, params: DBParams) -> DBResult {
+        let db = Arc::clone(&self.db);
+        let script = script.to_string();
+        let params = params.clone();
+        task::spawn_blocking(move || {
+            let db = db.lock().unwrap();
+            db.run_script(&script, params, ScriptMutability::Mutable)
+        })
+        .await
+        .unwrap()
     }
 
-    pub fn multi_tx(&self, write: bool) -> cozo::MultiTransaction {
-        self.db.multi_transaction(write)
+    pub fn multi_tx(&self, write: bool) -> AsyncMultiTransaction {
+        let db = Arc::clone(&self.db);
+        let db = db.lock().unwrap();
+        let tx = db.multi_transaction(write);
+        AsyncMultiTransaction(tx)
+    }
+}
+
+pub struct AsyncMultiTransaction(MultiTransaction);
+
+impl AsyncMultiTransaction {
+    pub async fn commit(self) -> Result<(), DBError> {
+        let tx = self.0;
+        task::spawn_blocking(move || tx.commit()).await.unwrap()
+    }
+
+    pub fn run_script(&self, script: &str, params: DBParams) -> DBResult {
+        let AsyncMultiTransaction(tx) = self;
+        tx.run_script(script, params)
     }
 }
 
