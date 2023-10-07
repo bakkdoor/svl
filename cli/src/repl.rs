@@ -9,7 +9,7 @@ use rustyline::{
 };
 use rustyline_derive::{Completer, Helper, Highlighter, Hinter, Validator};
 
-use svl_core::db::DBConnection;
+use svl_core::db::{DBConnection, DBError};
 use svl_core::queries::{Query, QueryError};
 use thiserror::Error;
 
@@ -108,8 +108,8 @@ pub async fn run_repl(db: &DBConnection) -> Result<(), Box<dyn std::error::Error
 
 #[derive(Error, Debug)]
 pub enum REPLError {
-    #[error("CozoError: {0}")]
-    Cozo(cozo::Error),
+    #[error("DBError: {0}")]
+    Db(#[from] DBError),
 
     #[error("ReadlineError: {0}")]
     Readline(#[from] ReadlineError),
@@ -183,9 +183,9 @@ fn print_result_table(counter: usize, named_rows: cozo::NamedRows) -> Result<(),
     Ok(())
 }
 
-fn print_error(counter: usize, e: cozo::Error) -> Result<(), REPLError> {
+fn print_error(counter: usize, e: DBError) -> Result<(), REPLError> {
     eprintln!("{counter:03} ❌ {e}\n");
-    Err(REPLError::Cozo(e))
+    Err(REPLError::Db(e))
 }
 
 fn print_query_error(counter: usize, e: QueryError) -> Result<(), REPLError> {

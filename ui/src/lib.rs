@@ -2,9 +2,12 @@ use iced::{
     widget::{Column, Container, PickList, Text, TextInput},
     Application, Command, Element, Settings, Theme,
 };
-use svl_core::{db::DBConnection, text};
+use svl_core::{
+    db::{DBConnection, DBError, DBParams, NamedRows},
+    text,
+};
 
-pub fn run_ui(_db: &DBConnection) -> iced::Result {
+pub fn run_ui() -> iced::Result {
     SearchApp::run(Settings::default())
 }
 
@@ -16,6 +19,7 @@ pub enum Message {
     OptionHovered(SearchKind),
     Search,
     SearchKindChanged(SearchKind),
+    SearchCompleted(SearchResult),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -62,8 +66,51 @@ impl<Result> Default for SearchState<Result> {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
+pub enum SearchResult {
+    Ok(SearchRows),
+    Error(String),
+}
+
+impl SearchResult {
+    pub fn is_ok(&self) -> bool {
+        matches!(self, Self::Ok(_))
+    }
+
+    pub fn is_err(&self) -> bool {
+        matches!(self, Self::Error(_))
+    }
+}
+
+impl From<DBError> for SearchResult {
+    fn from(err: DBError) -> Self {
+        Self::Error(err.to_string())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SearchRows {
+    pub kind: SearchKind,
+    pub rows: NamedRows,
+}
+
+impl SearchRows {
+    pub fn new(kind: SearchKind, rows: NamedRows) -> Self {
+        Self { kind, rows }
+    }
+
+    pub fn rows(&self) -> &NamedRows {
+        &self.rows
+    }
+
+    pub fn kind(&self) -> SearchKind {
+        self.kind
+    }
+}
+
+#[derive(Default)]
 pub struct SearchApp {
+    db: DBConnection,
     current_search_kind: SearchKind,
     author_search: SearchState<text::Author>,
     text_search: SearchState<text::Text>,
@@ -112,6 +159,26 @@ impl SearchApp {
             SearchKind::Word => self.word_search.update_search(term),
         }
     }
+
+    fn search_command(&self) -> Command<Message> {
+        // let term = self.author_search.search_term();
+
+        match self.current_search_kind {
+            SearchKind::Author => {
+                // let task = search_authors(&self.db, &term);
+                // Command::perform(task, Message::SearchCompleted)
+                Command::none()
+            }
+            SearchKind::Text => {
+                // Command::perform(self.db.search_texts(&term), Message::SearchCompleted)
+                Command::none()
+            }
+            SearchKind::Word => {
+                // Command::perform(self.db.search_words(&term), Message::SearchCompleted)
+                Command::none()
+            }
+        }
+    }
 }
 
 impl Application for SearchApp {
@@ -136,7 +203,8 @@ impl Application for SearchApp {
             }
             Message::Search => {
                 // Implement the actual search logic here based on self.search_term
-                Command::none()
+
+                self.search_command()
             }
             Message::SearchKindChanged(kind) => {
                 self.current_search_kind = kind;
@@ -169,5 +237,21 @@ impl Application for SearchApp {
 
     fn theme(&self) -> Theme {
         Theme::Dark
+    }
+}
+
+#[allow(dead_code)]
+async fn search_authors(db: &DBConnection, term: &str) -> SearchResult {
+    let script = r#"
+    ?[author_id,name,url] :=
+        *Author { name, url },
+        str_include(name, $name)
+    "#;
+    let params = DBParams::from_iter(vec![("name".into(), term.into())]);
+    let rows = db.run_immutable(script, params).await;
+
+    match rows {
+        Ok(rows) => SearchResult::Ok(SearchRows::new(SearchKind::Author, rows)),
+        Err(err) => SearchResult::from(err),
     }
 }

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    db::{DBConnection, DBParams, DataValue, NamedRows, ToDataValue},
+    db::{DBConnection, DBError, DBParams, DataValue, NamedRows, ToDataValue},
     text::TextId,
 };
 use thiserror::Error;
@@ -9,7 +9,7 @@ use thiserror::Error;
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum QueryError {
     #[error("DB Error: {0}")]
-    DBError(String),
+    DBError(crate::db::DBError),
 
     #[error("Unknown Query: {0}")]
     UnknownQuery(String),
@@ -29,9 +29,9 @@ pub enum QueryError {
 
 pub type QueryResult = Result<NamedRows, QueryError>;
 
-impl From<cozo::Error> for QueryError {
-    fn from(error: cozo::Error) -> Self {
-        Self::DBError(error.to_string())
+impl From<DBError> for QueryError {
+    fn from(error: DBError) -> Self {
+        Self::DBError(error)
     }
 }
 

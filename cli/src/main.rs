@@ -36,23 +36,26 @@ enum CLICommand {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    let db = DBConnection::new().await?;
 
     match cli.command {
         CLICommand::CreateDB => {
+            let db = DBConnection::new()?;
             create_schema(&db).await?;
         }
         CLICommand::ImportLibrary => {
+            let db = DBConnection::new()?;
             fetch_and_store_stats(&db).await?;
         }
         CLICommand::DeleteFilteredWords => {
+            let db = DBConnection::new()?;
             delete_filtered_words(&db).await?;
         }
         CLICommand::Repl => {
+            let db = DBConnection::new()?;
             repl::run_repl(&db).await?;
         }
         CLICommand::Ui => {
-            svl_ui::run_ui(&db)?;
+            svl_ui::run_ui()?;
         }
     }
 
