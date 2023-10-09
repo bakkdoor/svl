@@ -6,6 +6,7 @@ use svl_core::{
     db::{DBConnection, DBError, DBParams, NamedRows},
     text,
 };
+use thiserror::Error;
 
 pub fn run_ui() -> iced::Result {
     SearchApp::run(Settings::default())
@@ -16,7 +17,6 @@ pub fn run_ui() -> iced::Result {
 pub enum Message {
     Closed,
     InputChanged(String),
-    OptionHovered(SearchKind),
     Search,
     SearchKindChanged(SearchKind),
     SearchCompleted(SearchResult),
@@ -66,25 +66,20 @@ impl<Result> Default for SearchState<Result> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum SearchResult {
-    Ok(SearchRows),
-    Error(String),
+type SearchResult = Result<SearchRows, SearchError>;
+
+#[derive(Debug, Clone, Error)]
+pub enum SearchError {
+    #[error("DBError: {0}")]
+    Db(String),
+
+    #[error("Other error: {0}")]
+    Other(String),
 }
 
-impl SearchResult {
-    pub fn is_ok(&self) -> bool {
-        matches!(self, Self::Ok(_))
-    }
-
-    pub fn is_err(&self) -> bool {
-        matches!(self, Self::Error(_))
-    }
-}
-
-impl From<DBError> for SearchResult {
+impl From<DBError> for SearchError {
     fn from(err: DBError) -> Self {
-        Self::Error(err.to_string())
+        SearchError::Db(err.to_string())
     }
 }
 
@@ -248,10 +243,6 @@ async fn search_authors(db: &DBConnection, term: &str) -> SearchResult {
         str_include(name, $name)
     "#;
     let params = DBParams::from_iter(vec![("name".into(), term.into())]);
-    let rows = db.run_immutable(script, params).await;
-
-    match rows {
-        Ok(rows) => SearchResult::Ok(SearchRows::new(SearchKind::Author, rows)),
-        Err(err) => SearchResult::from(err),
-    }
+    let rows = db.run_immutable(script, params).await?;
+    Ok(SearchRows::new(SearchKind::Author, rows))
 }
