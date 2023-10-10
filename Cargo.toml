@@ -22,11 +22,12 @@ cozo = { version = "0.7.5", features = [
   "requests",
   "storage-rocksdb",
 ] }
+log = "*"
 regex = "*"
+reqwest = { version = "*" }
 serde = "*"
-serde_json = "*"
 serde_derive = "*"
+serde_json = "*"
 serde_repr = "*"
 thiserror = "*"
-reqwest = { version = "*" }
 tokio = { version = "*", features = ["full", "tracing"] }

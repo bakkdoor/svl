@@ -32,7 +32,7 @@ impl Stats {
     pub fn add_text(&mut self, text: Text) {
         let id = TextId::from(self.texts.len() + 1);
         let words: Vec<Word> = text.words().collect();
-        println!(
+        log::info!(
             "Processing Text {} ({} words): {}",
             id,
             words.len(),
@@ -65,7 +65,7 @@ impl Stats {
     }
 
     pub async fn store_in_db(&self, db: &DBConnection) -> Result<(), Box<dyn std::error::Error>> {
-        println!("Storing Stats in DB");
+        log::info!("Storing Stats in DB");
         let tx = db.multi_tx(true);
 
         for text in &self.texts {
