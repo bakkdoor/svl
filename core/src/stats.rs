@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    db::{val, DBConnection, DBParams},
+    db::{val, DBConnection, DBError, DBParams},
     text::{Text, TextId, Word},
 };
 
@@ -64,7 +64,7 @@ impl Stats {
         }
     }
 
-    pub async fn store_in_db(&self, db: &DBConnection) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn store_in_db(&self, db: &DBConnection) -> Result<(), DBError> {
         log::info!("Storing Stats in DB");
         let tx = db.multi_tx(true);
 
