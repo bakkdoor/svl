@@ -22,14 +22,34 @@ use std::path::PathBuf;
 
 pub type Result<T> = std::result::Result<T, SVLError>;
 
-pub fn load_rules(root_path: Option<PathBuf>) -> Result<String> {
-    let mut file_path = if let Some(path) = root_path {
-        path
-    } else {
-        std::env::current_dir()?
-    };
+pub enum LoadRulesFrom {
+    DefaultInCurrentDir,
+    DefaultInDir(PathBuf),
+    File(PathBuf),
+}
 
-    file_path.push(std::path::Path::new("rules.datalog"));
+impl LoadRulesFrom {
+    const DEFAULT_RULES_FILE: &'static str = "rules.datalog";
+
+    pub fn path(self) -> Result<PathBuf> {
+        match self {
+            LoadRulesFrom::DefaultInCurrentDir => {
+                let mut path = std::env::current_dir()?;
+                path.push(Self::DEFAULT_RULES_FILE);
+                Ok(path)
+            }
+            LoadRulesFrom::DefaultInDir(path) => {
+                let mut path = path;
+                path.push(Self::DEFAULT_RULES_FILE);
+                Ok(path)
+            }
+            LoadRulesFrom::File(path) => Ok(path),
+        }
+    }
+}
+
+pub fn load_rules(lrf: LoadRulesFrom) -> Result<String> {
+    let file_path = lrf.path()?;
 
     if !file_path.exists() {
         log::warn!("rules.datalog not found in: {:?}", file_path);
@@ -51,7 +71,7 @@ mod tests {
     fn test_load_rules() {
         let mut root_path = std::env::current_dir().unwrap();
         root_path.pop();
-        let rules = load_rules(Some(root_path)).unwrap();
+        let rules = load_rules(LoadRulesFrom::DefaultInDir(root_path)).unwrap();
         assert!(rules.len() > 0);
     }
 }

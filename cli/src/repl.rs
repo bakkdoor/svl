@@ -65,7 +65,8 @@ pub async fn run_repl(db: &DBConnection) -> Result<(), Box<dyn std::error::Error
     path_buf.push(".svl_history.txt");
     let history_file = path_buf.as_path();
 
-    let rules = svl_core::load_rules(None).unwrap_or("".to_string());
+    let rules = svl_core::load_rules(svl_core::LoadRulesFrom::DefaultInCurrentDir)
+        .unwrap_or("".to_string());
 
     if rl.load_history(history_file).is_err() {
         println!("No previous history.");
