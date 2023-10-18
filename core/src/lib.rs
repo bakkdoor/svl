@@ -53,13 +53,10 @@ pub fn load_rules(lrf: LoadRulesFrom) -> Result<String> {
 
     if !file_path.exists() {
         log::warn!("rules.datalog not found in: {:?}", file_path);
-        return Err(SVLError::LoadRulesFailed(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "rules.datalog not found",
-        )));
+        return Err(SVLError::RulesFileNotFound(file_path));
     }
     log::info!("Loading rules from: {:?}", file_path);
-    let rules = std::fs::read_to_string(file_path)?;
+    let rules = std::fs::read_to_string(file_path).map_err(SVLError::LoadRulesFailed)?;
     Ok(rules)
 }
 

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 use tokio::task::JoinError;
 
@@ -15,8 +17,14 @@ pub enum SVLError {
     #[error("failed to acquire semaphore permit: {0}")]
     SemaphoreAcquire(#[from] tokio::sync::AcquireError),
 
+    #[error("Unknown IO error: {0}")]
+    IOError(#[from] std::io::Error),
+
+    #[error("Rules file not found: {0}")]
+    RulesFileNotFound(PathBuf),
+
     #[error("Load rules failed: {0:?}")]
-    LoadRulesFailed(#[from] std::io::Error),
+    LoadRulesFailed(std::io::Error),
 
     #[error("Invalid state")]
     InvalidState,
