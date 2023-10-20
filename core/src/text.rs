@@ -5,9 +5,9 @@ use crate::db::{DataValue, Num, ToDataValue};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Author {
-    author_id: usize,
-    name: String,
-    url: String,
+    pub author_id: usize,
+    pub name: String,
+    pub url: String,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -28,6 +28,12 @@ impl From<&TextId> for DataValue {
 impl From<usize> for TextId {
     fn from(idx: usize) -> Self {
         Self(idx)
+    }
+}
+
+impl From<i64> for TextId {
+    fn from(idx: i64) -> Self {
+        Self(idx as usize)
     }
 }
 

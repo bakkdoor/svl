@@ -74,3 +74,64 @@ impl SearchRows {
         self.kind
     }
 }
+
+impl From<SearchRows> for Vec<svl_core::text::Author> {
+    fn from(search_rows: SearchRows) -> Self {
+        // use rows.headers to get index of author_id, name, url
+        // use rows.rows to get the values based on index via rows.headers
+        // use the values to create a vector of svl_core::text::Author
+
+        let rows = search_rows.rows;
+
+        let author_id = rows.headers.iter().position(|s| s == "author_id").unwrap();
+        let name = rows.headers.iter().position(|s| s == "name").unwrap();
+        let url = rows.headers.iter().position(|s| s == "url").unwrap();
+
+        rows.rows
+            .into_iter()
+            .map(|row| svl_core::text::Author {
+                author_id: row.get(author_id).unwrap().get_int().unwrap() as usize,
+                name: row.get(name).unwrap().get_str().unwrap().to_string(),
+                url: row.get(url).unwrap().get_str().unwrap().to_string(),
+            })
+            .collect()
+    }
+}
+
+impl From<SearchRows> for Vec<svl_core::text::Text> {
+    fn from(search_rows: SearchRows) -> Self {
+        let rows = search_rows.rows;
+
+        let author_id = rows.headers.iter().position(|s| s == "author_id").unwrap();
+        let text = rows.headers.iter().position(|s| s == "text").unwrap();
+        let text_id = rows.headers.iter().position(|s| s == "text_id").unwrap();
+        let url = rows.headers.iter().position(|s| s == "url").unwrap();
+
+        rows.rows
+            .into_iter()
+            .map(|row| {
+                let t = svl_core::text::Text {
+                    id: row.get(text_id).unwrap().get_int().map(|i| i.into()),
+                    text: row.get(text).unwrap().get_str().unwrap().to_string(),
+                    author_id: row.get(author_id).unwrap().get_int().map(|i| i as usize),
+                    url: row.get(url).unwrap().get_str().unwrap().to_string(),
+                };
+
+                t
+            })
+            .collect()
+    }
+}
+
+impl From<SearchRows> for Vec<svl_core::text::Word> {
+    fn from(search_rows: SearchRows) -> Self {
+        let rows = search_rows.rows;
+
+        let word = rows.headers.iter().position(|s| s == "word").unwrap();
+
+        rows.rows
+            .into_iter()
+            .map(|row| row.get(word).unwrap().get_str().unwrap().to_string().into())
+            .collect()
+    }
+}

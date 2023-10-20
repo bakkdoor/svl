@@ -32,6 +32,7 @@ impl From<tokio::task::JoinError> for DBError {
     }
 }
 
+#[derive(Clone)]
 pub struct DBConnection {
     db: Arc<Mutex<DbInstance>>,
 }

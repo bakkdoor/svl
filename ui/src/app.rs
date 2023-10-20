@@ -7,7 +7,8 @@ use svl_core::text;
 
 use crate::{
     message::Message,
-    search::{SearchKind, SearchState},
+    query,
+    search::{SearchKind, SearchResult, SearchState},
 };
 
 #[derive(Default)]
@@ -16,6 +17,7 @@ pub struct App {
     author_search: SearchState<text::Author>,
     text_search: SearchState<text::Text>,
     word_search: SearchState<text::Word>,
+    db: svl_core::db::DBConnection,
 }
 
 impl App {
@@ -62,13 +64,12 @@ impl App {
     }
 
     fn search_command(&self) -> Command<Message> {
-        // let term = self.author_search.search_term();
-
         match self.current_search_kind {
             SearchKind::Author => {
-                // let task = search_authors(&self.db, &term);
-                // Command::perform(task, Message::SearchCompleted)
-                Command::none()
+                let term = self.author_search.search_term();
+                let db = self.db.clone();
+                let task = query::search_authors(db, term);
+                Command::perform(task, Message::SearchCompleted)
             }
             SearchKind::Text => {
                 // Command::perform(self.db.search_texts(&term), Message::SearchCompleted)
@@ -78,6 +79,17 @@ impl App {
                 // Command::perform(self.db.search_words(&term), Message::SearchCompleted)
                 Command::none()
             }
+        }
+    }
+
+    fn update_search_results(&mut self, result: SearchResult) {
+        match result {
+            Ok(rows) => match rows.kind() {
+                SearchKind::Author => self.author_search.search_results = rows.into(),
+                SearchKind::Text => self.text_search.search_results = rows.into(),
+                SearchKind::Word => self.word_search.search_results = rows.into(),
+            },
+            Err(err) => println!("Error: {}", err),
         }
     }
 }
@@ -104,11 +116,16 @@ impl Application for App {
             }
             Message::Search => {
                 // Implement the actual search logic here based on self.search_term
+                println!("Search for: {}", self.search_term());
 
                 self.search_command()
             }
             Message::SearchKindChanged(kind) => {
                 self.current_search_kind = kind;
+                Command::none()
+            }
+            Message::SearchCompleted(result) => {
+                self.update_search_results(result);
                 Command::none()
             }
             _ => Command::none(),
@@ -117,7 +134,9 @@ impl Application for App {
 
     fn view(&self) -> Element<Self::Message> {
         let search_term: String = self.search_term();
-        let input = TextInput::new("Search...", &search_term).on_input(Message::InputChanged);
+        let input = TextInput::new("Search...", &search_term)
+            .on_input(Message::InputChanged)
+            .on_submit(Message::Search);
 
         let pick_list = PickList::new(
             vec![SearchKind::Word, SearchKind::Author, SearchKind::Text],

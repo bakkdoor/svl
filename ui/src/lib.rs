@@ -12,25 +12,12 @@
 mod app;
 mod errors;
 mod message;
+mod query;
 mod search;
 
 use app::App;
 use iced::{Application, Settings};
-use search::{SearchKind, SearchResult, SearchRows};
-use svl_core::db::{DBConnection, DBParams};
 
 pub fn run_ui() -> iced::Result {
     App::run(Settings::default())
-}
-
-#[allow(dead_code)]
-async fn search_authors(db: &DBConnection, term: &str) -> SearchResult {
-    let script = r#"
-    ?[author_id,name,url] :=
-        *Author { name, url },
-        str_include(name, $name)
-    "#;
-    let params = DBParams::from_iter(vec![("name".into(), term.into())]);
-    let rows = db.run_immutable(script, params).await?;
-    Ok(SearchRows::new(SearchKind::Author, rows))
 }
