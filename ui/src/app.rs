@@ -6,6 +6,7 @@ use iced::{
 use svl_core::{db::DBConnection, text};
 
 use crate::{
+    errors::SearchError,
     message::Message,
     query,
     search::{SearchKind, SearchResult, SearchState},
@@ -112,14 +113,23 @@ impl App {
         }
     }
 
-    fn update_search_results(&mut self, result: SearchResult) {
+    fn update_search_results(&mut self, result: SearchResult) -> Result<(), SearchError> {
         match result {
-            Ok(rows) => match rows.kind() {
-                SearchKind::Author => self.author_search.update_search_results(rows.into()),
-                SearchKind::Text => self.text_search.update_search_results(rows.into()),
-                SearchKind::Word => self.word_search.update_search_results(rows.into()),
-            },
-            Err(err) => println!("Error: {}", err),
+            Ok(rows) => {
+                match rows.kind() {
+                    SearchKind::Author => {
+                        self.author_search.update_search_results(rows.try_into()?);
+                    }
+                    SearchKind::Text => {
+                        self.text_search.update_search_results(rows.try_into()?);
+                    }
+                    SearchKind::Word => {
+                        self.word_search.update_search_results(rows.try_into()?);
+                    }
+                }
+                Ok(())
+            }
+            Err(err) => Err(err),
         }
     }
 }
@@ -155,7 +165,10 @@ impl Application for App {
                 Command::none()
             }
             Message::SearchCompleted(result) => {
-                self.update_search_results(result);
+                match self.update_search_results(result) {
+                    Ok(_) => println!("Search completed successfully"),
+                    Err(err) => println!("Search failed: {}", err),
+                }
                 Command::none()
             }
             _ => Command::none(),

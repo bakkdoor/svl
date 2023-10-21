@@ -78,39 +78,76 @@ impl SearchRows {
     }
 }
 
-impl From<SearchRows> for Vec<svl_core::text::Author> {
-    fn from(search_rows: SearchRows) -> Self {
-        // use rows.headers to get index of author_id, name, url
-        // use rows.rows to get the values based on index via rows.headers
-        // use the values to create a vector of svl_core::text::Author
+impl TryFrom<SearchRows> for Vec<svl_core::text::Author> {
+    type Error = SearchError;
 
+    fn try_from(search_rows: SearchRows) -> Result<Self, Self::Error> {
         let rows = search_rows.rows;
 
-        let name = rows.headers.iter().position(|s| s == "name").unwrap();
-        let url = rows.headers.iter().position(|s| s == "url").unwrap();
+        let name = rows
+            .headers
+            .iter()
+            .position(|s| s == "name")
+            .ok_or(SearchError::MissingColumn("name".into()))?;
 
-        rows.rows
+        let url = rows
+            .headers
+            .iter()
+            .position(|s| s == "url")
+            .ok_or(SearchError::MissingColumn("url".into()))?;
+
+        let authors = rows
+            .rows
             .into_iter()
             .enumerate()
-            .map(|(author_id, row)| svl_core::text::Author {
-                author_id,
-                name: row.get(name).unwrap().get_str().unwrap().to_string(),
-                url: row.get(url).unwrap().get_str().unwrap().to_string(),
+            .map(|(author_id, row)| {
+                let name = row.get(name).unwrap().get_str().unwrap().to_string();
+                let url = row.get(url).unwrap().get_str().unwrap().to_string();
+
+                svl_core::text::Author {
+                    author_id,
+                    name,
+                    url,
+                }
             })
-            .collect()
+            .collect();
+
+        Ok(authors)
     }
 }
 
-impl From<SearchRows> for Vec<svl_core::text::Text> {
-    fn from(search_rows: SearchRows) -> Self {
-        let rows = search_rows.rows;
+impl TryFrom<SearchRows> for Vec<svl_core::text::Text> {
+    type Error = SearchError;
 
-        let author_id = rows.headers.iter().position(|s| s == "author_id").unwrap();
-        let text = rows.headers.iter().position(|s| s == "text").unwrap();
-        let text_id = rows.headers.iter().position(|s| s == "text_id").unwrap();
-        let url = rows.headers.iter().position(|s| s == "url").unwrap();
+    fn try_from(value: SearchRows) -> Result<Self, Self::Error> {
+        let rows = value.rows;
 
-        rows.rows
+        let author_id = rows
+            .headers
+            .iter()
+            .position(|s| s == "author_id")
+            .ok_or(SearchError::MissingColumn("author_id".into()))?;
+
+        let text = rows
+            .headers
+            .iter()
+            .position(|s| s == "text")
+            .ok_or(SearchError::MissingColumn("text".into()))?;
+
+        let text_id = rows
+            .headers
+            .iter()
+            .position(|s| s == "text_id")
+            .ok_or(SearchError::MissingColumn("text_id".into()))?;
+
+        let url = rows
+            .headers
+            .iter()
+            .position(|s| s == "url")
+            .ok_or(SearchError::MissingColumn("url".into()))?;
+
+        let texts = rows
+            .rows
             .into_iter()
             .map(|row| {
                 let t = svl_core::text::Text {
@@ -122,19 +159,30 @@ impl From<SearchRows> for Vec<svl_core::text::Text> {
 
                 t
             })
-            .collect()
+            .collect();
+
+        Ok(texts)
     }
 }
 
-impl From<SearchRows> for Vec<svl_core::text::Word> {
-    fn from(search_rows: SearchRows) -> Self {
-        let rows = search_rows.rows;
+impl TryFrom<SearchRows> for Vec<svl_core::text::Word> {
+    type Error = SearchError;
 
-        let word = rows.headers.iter().position(|s| s == "word").unwrap();
+    fn try_from(value: SearchRows) -> Result<Self, Self::Error> {
+        let rows = value.rows;
 
-        rows.rows
+        let word = rows
+            .headers
+            .iter()
+            .position(|s| s == "word")
+            .ok_or(SearchError::MissingColumn("word".into()))?;
+
+        let words = rows
+            .rows
             .into_iter()
             .map(|row| row.get(word).unwrap().get_str().unwrap().to_string().into())
-            .collect()
+            .collect();
+
+        Ok(words)
     }
 }
