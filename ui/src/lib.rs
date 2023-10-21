@@ -17,7 +17,8 @@ mod search;
 
 use app::App;
 use iced::{Application, Settings};
+use svl_core::db::DBConnection;
 
-pub fn run_ui() -> iced::Result {
-    App::run(Settings::default())
+pub fn run_ui(db: DBConnection) -> iced::Result {
+    App::run(Settings::with_flags(app::Args { db }))
 }

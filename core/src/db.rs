@@ -77,12 +77,6 @@ impl DBConnection {
     }
 }
 
-impl Default for DBConnection {
-    fn default() -> Self {
-        Self::new().expect("Failed to create default DBConnection")
-    }
-}
-
 pub struct AsyncMultiTransaction(MultiTransaction);
 
 impl AsyncMultiTransaction {

@@ -29,7 +29,6 @@ pub struct SearchState<Result> {
 impl<Result> SearchState<Result> {
     pub fn update_search(&mut self, term: &str) {
         self.search_term = term.to_string();
-        self.search_results = Vec::new();
     }
 
     pub fn search_term(&self) -> String {

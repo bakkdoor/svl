@@ -3,7 +3,7 @@ use iced::{
     Application, Command, Element, Theme,
 };
 
-use svl_core::text;
+use svl_core::{db::DBConnection, text};
 
 use crate::{
     message::Message,
@@ -11,7 +11,6 @@ use crate::{
     search::{SearchKind, SearchResult, SearchState},
 };
 
-#[derive(Default)]
 pub struct App {
     current_search_kind: SearchKind,
     author_search: SearchState<text::Author>,
@@ -20,7 +19,21 @@ pub struct App {
     db: svl_core::db::DBConnection,
 }
 
+pub struct Args {
+    pub db: DBConnection,
+}
+
 impl App {
+    fn new(args: Args) -> Self {
+        Self {
+            db: args.db,
+            current_search_kind: SearchKind::default(),
+            author_search: SearchState::default(),
+            text_search: SearchState::default(),
+            word_search: SearchState::default(),
+        }
+    }
+
     fn view_search_kind(&self) -> Element<Message> {
         match self.current_search_kind {
             SearchKind::Author => self.view_authors(),
@@ -115,10 +128,10 @@ impl Application for App {
     type Executor = iced::executor::Default;
     type Theme = Theme;
     type Message = Message;
-    type Flags = ();
+    type Flags = Args;
 
-    fn new(_flags: ()) -> (Self, Command<Message>) {
-        (Self::default(), Command::none())
+    fn new(args: Args) -> (Self, Command<Message>) {
+        (Self::new(args), Command::none())
     }
 
     fn title(&self) -> String {

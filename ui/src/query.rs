@@ -10,7 +10,6 @@ pub async fn search_authors(db: DBConnection, term: String) -> SearchResult {
     "#;
     let params = DBParams::from_iter(vec![("name".into(), term.into())]);
     let rows = db.run_immutable(script, params).await?;
-    println!("rows: {:?}", rows);
     Ok(SearchRows::new(SearchKind::Author, rows))
 }
 
@@ -22,19 +21,17 @@ pub async fn search_words(db: DBConnection, term: String) -> SearchResult {
     "#;
     let params = DBParams::from_iter(vec![("term".into(), term.into())]);
     let rows = db.run_immutable(script, params).await?;
-    println!("rows: {:?}", rows);
     Ok(SearchRows::new(SearchKind::Word, rows))
 }
 
 pub async fn search_texts(db: DBConnection, term: String) -> SearchResult {
     let script = r#"
-    ?[text_id, url, author_id] :=
+    ?[text_id, url, text, author_id] :=
         *Text { text_id, url, text, author_id },
         *Word { word, text_id },
         starts_with(word, $term)
     "#;
     let params = DBParams::from_iter(vec![("term".into(), term.into())]);
     let rows = db.run_immutable(script, params).await?;
-    println!("rows: {:?}", rows);
     Ok(SearchRows::new(SearchKind::Text, rows))
 }
