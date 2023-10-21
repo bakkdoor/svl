@@ -1,5 +1,5 @@
 use iced::{
-    widget::{Column, Container, PickList, Text, TextInput},
+    widget::{Column, Container, PickList, Scrollable, Text, TextInput},
     Application, Command, Element, Theme,
 };
 
@@ -191,7 +191,11 @@ impl Application for App {
             Column::new()
                 .push(pick_list)
                 .push(input)
-                .push(self.view_search_kind()),
+                .push(Scrollable::new(
+                    Container::new(self.view_search_kind())
+                        .width(iced::Length::Fill)
+                        .height(iced::Length::Fill),
+                )),
         )
         .width(iced::Length::Fill)
         .height(iced::Length::Fill)
