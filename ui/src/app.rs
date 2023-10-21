@@ -30,21 +30,34 @@ impl App {
     }
 
     fn view_words(&self) -> Element<Message> {
-        // Implement the view for the Words search
-        // ...
-        Text::new("Words Search").into()
+        // list all words from search results
+        self.word_search
+            .search_results
+            .iter()
+            .fold(Column::new(), |col, word| {
+                col.push(Text::new(word.to_string()))
+            })
+            .into()
     }
 
     fn view_texts(&self) -> Element<Message> {
-        // Implement the view for the Texts search
-        // ...
-        Text::new("Texts Search").into()
+        // list all texts from search results
+        self.text_search
+            .search_results
+            .iter()
+            .fold(Column::new(), |col, text| col.push(Text::new(&text.url)))
+            .into()
     }
 
     fn view_authors(&self) -> Element<Message> {
-        // Implement the view for the Authors search
-        // ...
-        Text::new("Authors Search").into()
+        // list all authors from search results
+        self.author_search
+            .search_results
+            .iter()
+            .fold(Column::new(), |col, author| {
+                col.push(Text::new(&author.name))
+            })
+            .into()
     }
 
     fn search_term(&self) -> String {
@@ -72,12 +85,16 @@ impl App {
                 Command::perform(task, Message::SearchCompleted)
             }
             SearchKind::Text => {
-                // Command::perform(self.db.search_texts(&term), Message::SearchCompleted)
-                Command::none()
+                let term = self.word_search.search_term();
+                let db = self.db.clone();
+                let task = query::search_texts(db, term);
+                Command::perform(task, Message::SearchCompleted)
             }
             SearchKind::Word => {
-                // Command::perform(self.db.search_words(&term), Message::SearchCompleted)
-                Command::none()
+                let term = self.word_search.search_term();
+                let db = self.db.clone();
+                let task = query::search_words(db, term);
+                Command::perform(task, Message::SearchCompleted)
             }
         }
     }
@@ -85,9 +102,9 @@ impl App {
     fn update_search_results(&mut self, result: SearchResult) {
         match result {
             Ok(rows) => match rows.kind() {
-                SearchKind::Author => self.author_search.search_results = rows.into(),
-                SearchKind::Text => self.text_search.search_results = rows.into(),
-                SearchKind::Word => self.word_search.search_results = rows.into(),
+                SearchKind::Author => self.author_search.update_search_results(rows.into()),
+                SearchKind::Text => self.text_search.update_search_results(rows.into()),
+                SearchKind::Word => self.word_search.update_search_results(rows.into()),
             },
             Err(err) => println!("Error: {}", err),
         }

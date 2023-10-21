@@ -35,6 +35,10 @@ impl<Result> SearchState<Result> {
     pub fn search_term(&self) -> String {
         self.search_term.clone()
     }
+
+    pub fn update_search_results(&mut self, rows: Vec<Result>) {
+        self.search_results = rows;
+    }
 }
 
 impl<Result> Default for SearchState<Result> {
@@ -83,14 +87,14 @@ impl From<SearchRows> for Vec<svl_core::text::Author> {
 
         let rows = search_rows.rows;
 
-        let author_id = rows.headers.iter().position(|s| s == "author_id").unwrap();
         let name = rows.headers.iter().position(|s| s == "name").unwrap();
         let url = rows.headers.iter().position(|s| s == "url").unwrap();
 
         rows.rows
             .into_iter()
-            .map(|row| svl_core::text::Author {
-                author_id: row.get(author_id).unwrap().get_int().unwrap() as usize,
+            .enumerate()
+            .map(|(author_id, row)| svl_core::text::Author {
+                author_id,
                 name: row.get(name).unwrap().get_str().unwrap().to_string(),
                 url: row.get(url).unwrap().get_str().unwrap().to_string(),
             })

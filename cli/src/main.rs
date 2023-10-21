@@ -54,9 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let db = DBConnection::new()?;
             repl::run_repl(&db).await?;
         }
-        CLICommand::Ui => {
-            svl_ui::run_ui()?;
-        }
+        CLICommand::Ui => svl_ui::run_ui()?,
     }
 
     Ok(())

@@ -10,6 +10,6 @@ edition = "2021"
 svl-core = { path = "../core" }
 
 anyhow.workspace = true
-iced = "0.10"
+iced = { version = "0.10", features = ["tokio"] }
 thiserror.workspace = true
 tokio.workspace = true
