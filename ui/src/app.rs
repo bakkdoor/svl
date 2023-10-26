@@ -177,9 +177,28 @@ impl Application for App {
 
     fn view(&self) -> Element<Self::Message> {
         let search_term: String = self.search_term();
+
+        let result_counter = Text::new(format!(
+            "Found {} results",
+            match self.current_search_kind {
+                SearchKind::Author => self.author_search.search_results.len(),
+                SearchKind::Text => self.text_search.search_results.len(),
+                SearchKind::Word => self.word_search.search_results.len(),
+            }
+        ));
+
+        let side_padding = iced::Padding {
+            left: 10.0,
+            right: 10.0,
+            top: 0.0,
+            bottom: 0.0,
+        };
+        let fill = iced::Length::Fill;
+
         let input = TextInput::new("Search...", &search_term)
             .on_input(Message::InputChanged)
-            .on_submit(Message::Search);
+            .on_submit(Message::Search)
+            .padding(10);
 
         let pick_list = PickList::new(
             vec![SearchKind::Word, SearchKind::Author, SearchKind::Text],
@@ -189,20 +208,26 @@ impl Application for App {
 
         Container::new(
             Column::new()
-                .push(pick_list)
-                .push(input)
+                .push(padded_container(pick_list))
+                .push(padded_container(result_counter).padding(side_padding))
+                .push(padded_container(input.padding(10)).width(fill))
                 .push(Scrollable::new(
                     Container::new(self.view_search_kind())
-                        .width(iced::Length::Fill)
-                        .height(iced::Length::Fill),
+                        .width(fill)
+                        .height(fill)
+                        .padding(side_padding),
                 )),
         )
-        .width(iced::Length::Fill)
-        .height(iced::Length::Fill)
+        .width(fill)
+        .height(fill)
         .into()
     }
 
     fn theme(&self) -> Theme {
         Theme::Dark
     }
+}
+
+fn padded_container<'a>(content: impl Into<Element<'a, Message>>) -> Container<'a, Message> {
+    Container::new(content).padding(10)
 }
