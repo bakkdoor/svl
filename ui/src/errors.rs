@@ -12,3 +12,17 @@ pub enum SearchError {
     #[error("Other error: {0}")]
     Other(String),
 }
+
+impl SearchError {
+    pub fn db<S: ToString>(err: S) -> Self {
+        Self::Db(err.to_string())
+    }
+
+    pub fn missing_column<S: ToString>(err: S) -> Self {
+        Self::MissingColumn(err.to_string())
+    }
+
+    pub fn other<S: ToString>(err: S) -> Self {
+        Self::Other(err.to_string())
+    }
+}

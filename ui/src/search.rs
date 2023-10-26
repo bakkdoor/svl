@@ -59,8 +59,8 @@ impl From<DBError> for SearchError {
 
 #[derive(Debug, Clone)]
 pub struct SearchRows {
-    pub kind: SearchKind,
-    pub rows: NamedRows,
+    kind: SearchKind,
+    rows: NamedRows,
 }
 
 #[allow(dead_code)]
@@ -76,25 +76,23 @@ impl SearchRows {
     pub fn kind(&self) -> SearchKind {
         self.kind
     }
+
+    pub fn position(&self, column: &str) -> Result<usize, SearchError> {
+        self.rows
+            .headers
+            .iter()
+            .position(|s| s == column)
+            .ok_or(SearchError::missing_column(column))
+    }
 }
 
 impl TryFrom<SearchRows> for Vec<svl_core::text::Author> {
     type Error = SearchError;
 
-    fn try_from(search_rows: SearchRows) -> Result<Self, Self::Error> {
-        let rows = search_rows.rows;
-
-        let name = rows
-            .headers
-            .iter()
-            .position(|s| s == "name")
-            .ok_or(SearchError::MissingColumn("name".into()))?;
-
-        let url = rows
-            .headers
-            .iter()
-            .position(|s| s == "url")
-            .ok_or(SearchError::MissingColumn("url".into()))?;
+    fn try_from(sr: SearchRows) -> Result<Self, Self::Error> {
+        let name = sr.position("name")?;
+        let url = sr.position("url")?;
+        let rows = sr.rows;
 
         let authors = rows
             .rows
@@ -119,32 +117,12 @@ impl TryFrom<SearchRows> for Vec<svl_core::text::Author> {
 impl TryFrom<SearchRows> for Vec<svl_core::text::Text> {
     type Error = SearchError;
 
-    fn try_from(value: SearchRows) -> Result<Self, Self::Error> {
-        let rows = value.rows;
-
-        let author_id = rows
-            .headers
-            .iter()
-            .position(|s| s == "author_id")
-            .ok_or(SearchError::MissingColumn("author_id".into()))?;
-
-        let text = rows
-            .headers
-            .iter()
-            .position(|s| s == "text")
-            .ok_or(SearchError::MissingColumn("text".into()))?;
-
-        let text_id = rows
-            .headers
-            .iter()
-            .position(|s| s == "text_id")
-            .ok_or(SearchError::MissingColumn("text_id".into()))?;
-
-        let url = rows
-            .headers
-            .iter()
-            .position(|s| s == "url")
-            .ok_or(SearchError::MissingColumn("url".into()))?;
+    fn try_from(sr: SearchRows) -> Result<Self, Self::Error> {
+        let author_id = sr.position("author_id")?;
+        let text = sr.position("text")?;
+        let text_id = sr.position("text_id")?;
+        let url = sr.position("url")?;
+        let rows = sr.rows;
 
         let texts = rows
             .rows
@@ -168,14 +146,9 @@ impl TryFrom<SearchRows> for Vec<svl_core::text::Text> {
 impl TryFrom<SearchRows> for Vec<svl_core::text::Word> {
     type Error = SearchError;
 
-    fn try_from(value: SearchRows) -> Result<Self, Self::Error> {
-        let rows = value.rows;
-
-        let word = rows
-            .headers
-            .iter()
-            .position(|s| s == "word")
-            .ok_or(SearchError::MissingColumn("word".into()))?;
+    fn try_from(sr: SearchRows) -> Result<Self, Self::Error> {
+        let word = sr.position("word")?;
+        let rows = sr.rows;
 
         let words = rows
             .rows
