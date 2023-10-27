@@ -212,10 +212,7 @@ impl Application for App {
                 .push(padded_container(result_counter).padding(side_padding))
                 .push(padded_container(input.padding(10)).width(fill))
                 .push(Scrollable::new(
-                    Container::new(self.view_search_kind())
-                        .width(fill)
-                        .height(fill)
-                        .padding(side_padding),
+                    padded_container(self.view_search_kind()).width(fill),
                 )),
         )
         .width(fill)
