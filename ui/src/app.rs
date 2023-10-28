@@ -222,7 +222,7 @@ impl Application for App {
             .padding(10);
 
         let search_kind_pick_list = PickList::new(
-            vec![SearchKind::Word, SearchKind::Author, SearchKind::Text],
+            SearchKind::all_kinds(),
             Some(self.current_search_kind),
             Message::SearchKindChanged,
         );

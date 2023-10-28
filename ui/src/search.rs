@@ -10,6 +10,12 @@ pub enum SearchKind {
     Word,
 }
 
+impl SearchKind {
+    pub fn all_kinds() -> Vec<SearchKind> {
+        vec![SearchKind::Word, SearchKind::Author, SearchKind::Text]
+    }
+}
+
 impl std::fmt::Display for SearchKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
