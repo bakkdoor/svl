@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use thiserror::Error;
 
 #[allow(dead_code)]
@@ -11,6 +13,30 @@ pub enum SearchError {
 
     #[error("Other error: {0}")]
     Other(String),
+
+    #[error("Invalid type for {0} - Expected {1}")]
+    InvalidType(String, ExpectedType),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ExpectedType {
+    String,
+    Integer,
+    Float,
+    Boolean,
+    Usize,
+}
+
+impl Display for ExpectedType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExpectedType::String => write!(f, "String"),
+            ExpectedType::Integer => write!(f, "Integer"),
+            ExpectedType::Float => write!(f, "Float"),
+            ExpectedType::Boolean => write!(f, "Boolean"),
+            ExpectedType::Usize => write!(f, "Usize"),
+        }
+    }
 }
 
 impl SearchError {
@@ -24,5 +50,9 @@ impl SearchError {
 
     pub fn other<S: ToString>(err: S) -> Self {
         Self::Other(err.to_string())
+    }
+
+    pub fn invalid_type<S: ToString>(property: S, expected_type: ExpectedType) -> Self {
+        Self::InvalidType(property.to_string(), expected_type)
     }
 }

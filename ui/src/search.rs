@@ -1,6 +1,6 @@
 use svl_core::db::{DBError, DBParams, NamedRows};
 
-use crate::errors::SearchError;
+use crate::errors::{ExpectedType, SearchError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SearchKind {
@@ -151,21 +151,29 @@ impl TryFrom<SearchRows> for Vec<svl_core::text::Author> {
         let url = sr.position("url")?;
         let rows = sr.rows;
 
-        let authors = rows
-            .rows
-            .into_iter()
-            .enumerate()
-            .map(|(author_id, row)| {
-                let name = row.get(name).unwrap().get_str().unwrap().to_string();
-                let url = row.get(url).unwrap().get_str().unwrap().to_string();
+        let mut authors = Vec::with_capacity(rows.rows.len());
 
-                svl_core::text::Author {
-                    author_id,
-                    name,
-                    url,
-                }
-            })
-            .collect();
+        for (author_id, row) in rows.rows.into_iter().enumerate() {
+            let name = row.get(name).ok_or(SearchError::missing_column("name"))?;
+            let name = name
+                .get_str()
+                .map(|s| s.to_string())
+                .ok_or(SearchError::invalid_type("name", ExpectedType::String))?;
+
+            let url = row.get(url).ok_or(SearchError::missing_column("url"))?;
+            let url = url
+                .get_str()
+                .map(|s| s.to_string())
+                .ok_or(SearchError::invalid_type("url", ExpectedType::String))?;
+
+            let author = svl_core::text::Author {
+                author_id,
+                name,
+                url,
+            };
+
+            authors.push(author);
+        }
 
         Ok(authors)
     }
@@ -181,20 +189,40 @@ impl TryFrom<SearchRows> for Vec<svl_core::text::Text> {
         let url = sr.position("url")?;
         let rows = sr.rows;
 
-        let texts = rows
-            .rows
-            .into_iter()
-            .map(|row| {
-                let t = svl_core::text::Text {
-                    id: row.get(text_id).unwrap().get_int().map(|i| i.into()),
-                    text: row.get(text).unwrap().get_str().unwrap().to_string(),
-                    author_id: row.get(author_id).unwrap().get_int().map(|i| i as usize),
-                    url: row.get(url).unwrap().get_str().unwrap().to_string(),
-                };
+        let mut texts = Vec::with_capacity(rows.rows.len());
 
-                t
-            })
-            .collect();
+        for row in rows.rows {
+            let id = row.get(text_id).and_then(|x| x.get_int()).map(|i| i.into());
+
+            let text = row.get(text).ok_or(SearchError::missing_column("text"))?;
+            let text = text
+                .get_str()
+                .map(|x| x.to_string())
+                .ok_or(SearchError::invalid_type("text", ExpectedType::String))?;
+
+            let author_id = row
+                .get(author_id)
+                .ok_or(SearchError::missing_column("author_id"))?;
+            let author_id = author_id
+                .get_int()
+                .map(|i| i as usize)
+                .ok_or(SearchError::invalid_type("author_id", ExpectedType::Usize))?;
+
+            let url = row.get(url).ok_or(SearchError::missing_column("url"))?;
+            let url = url
+                .get_str()
+                .map(|x| x.to_string())
+                .ok_or(SearchError::invalid_type("url", ExpectedType::String))?;
+
+            let t = svl_core::text::Text {
+                id,
+                text,
+                author_id: Some(author_id),
+                url,
+            };
+
+            texts.push(t);
+        }
 
         Ok(texts)
     }
@@ -207,11 +235,17 @@ impl TryFrom<SearchRows> for Vec<svl_core::text::Word> {
         let word = sr.position("word")?;
         let rows = sr.rows;
 
-        let words = rows
-            .rows
-            .into_iter()
-            .map(|row| row.get(word).unwrap().get_str().unwrap().to_string().into())
-            .collect();
+        let mut words = Vec::with_capacity(rows.rows.len());
+
+        for row in rows.rows {
+            let word = row.get(word).ok_or(SearchError::missing_column("word"))?;
+            let word = word
+                .get_str()
+                .map(|s| s.to_string())
+                .ok_or(SearchError::invalid_type("word", ExpectedType::String))?;
+
+            words.push(word.into());
+        }
 
         Ok(words)
     }
