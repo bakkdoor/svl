@@ -1,4 +1,4 @@
-use svl_core::db::{DBError, NamedRows};
+use svl_core::db::{DBError, DBParams, NamedRows};
 
 use crate::errors::SearchError;
 
@@ -13,9 +13,60 @@ pub enum SearchKind {
 impl std::fmt::Display for SearchKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SearchKind::Author => write!(f, "Authors"),
-            SearchKind::Text => write!(f, "Texts"),
-            SearchKind::Word => write!(f, "Words"),
+            SearchKind::Author => write!(f, "Author"),
+            SearchKind::Text => write!(f, "Text"),
+            SearchKind::Word => write!(f, "Word"),
+        }
+    }
+}
+
+pub type SearchModeQuery = (String, DBParams);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SearchMode {
+    #[default]
+    StartsWith,
+    EndsWith,
+    Contains,
+    IsEqual,
+    IsNotEqual,
+}
+
+impl SearchMode {
+    pub fn all_modes() -> Vec<SearchMode> {
+        vec![
+            SearchMode::StartsWith,
+            SearchMode::EndsWith,
+            SearchMode::Contains,
+            SearchMode::IsEqual,
+            SearchMode::IsNotEqual,
+        ]
+    }
+}
+
+impl SearchMode {
+    pub fn query(&self, var: &str, term: String) -> SearchModeQuery {
+        let func_name = match self {
+            SearchMode::StartsWith => "starts_with",
+            SearchMode::EndsWith => "ends_with",
+            SearchMode::Contains => "str_includes",
+            SearchMode::IsEqual => "eq",
+            SearchMode::IsNotEqual => "neq",
+        };
+        let code = format!("{}({}, $term)", func_name, var);
+        let params = DBParams::from_iter(vec![("term".into(), term.into())]);
+        (code, params)
+    }
+}
+
+impl std::fmt::Display for SearchMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SearchMode::StartsWith => write!(f, "starts with"),
+            SearchMode::EndsWith => write!(f, "ends with"),
+            SearchMode::Contains => write!(f, "contains"),
+            SearchMode::IsEqual => write!(f, "is equal to"),
+            SearchMode::IsNotEqual => write!(f, "is not equal to"),
         }
     }
 }

@@ -1,5 +1,5 @@
 use iced::{
-    widget::{Column, Container, PickList, Scrollable, Text, TextInput},
+    widget::{Column, Container, PickList, Row, Scrollable, Text, TextInput},
     Application, Command, Element, Theme,
 };
 
@@ -9,11 +9,12 @@ use crate::{
     errors::SearchError,
     message::Message,
     query,
-    search::{SearchKind, SearchResult, SearchState},
+    search::{SearchKind, SearchMode, SearchResult, SearchState},
 };
 
 pub struct App {
     current_search_kind: SearchKind,
+    current_search_mode: SearchMode,
     author_search: SearchState<text::Author>,
     text_search: SearchState<text::Text>,
     word_search: SearchState<text::Word>,
@@ -29,6 +30,7 @@ impl App {
         Self {
             db: args.db,
             current_search_kind: SearchKind::default(),
+            current_search_mode: SearchMode::default(),
             author_search: SearchState::default(),
             text_search: SearchState::default(),
             word_search: SearchState::default(),
@@ -82,6 +84,14 @@ impl App {
         }
     }
 
+    fn search_kind(&self) -> SearchKind {
+        self.current_search_kind
+    }
+
+    fn search_mode(&self) -> SearchMode {
+        self.current_search_mode
+    }
+
     fn update_search(&mut self, term: &str) {
         match self.current_search_kind {
             SearchKind::Author => self.author_search.update_search(term),
@@ -91,23 +101,24 @@ impl App {
     }
 
     fn search_command(&self) -> Command<Message> {
+        let search_mode = self.current_search_mode;
         match self.current_search_kind {
             SearchKind::Author => {
                 let term = self.author_search.search_term();
                 let db = self.db.clone();
-                let task = query::search_authors(db, term);
+                let task = query::search_authors(db, term, search_mode);
                 Command::perform(task, Message::SearchCompleted)
             }
             SearchKind::Text => {
                 let term = self.word_search.search_term();
                 let db = self.db.clone();
-                let task = query::search_texts(db, term);
+                let task = query::search_texts(db, term, search_mode);
                 Command::perform(task, Message::SearchCompleted)
             }
             SearchKind::Word => {
                 let term = self.word_search.search_term();
                 let db = self.db.clone();
-                let task = query::search_words(db, term);
+                let task = query::search_words(db, term, search_mode);
                 Command::perform(task, Message::SearchCompleted)
             }
         }
@@ -150,18 +161,29 @@ impl Application for App {
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
+            Message::Closed => Command::none(),
+
             Message::InputChanged(term) => {
                 self.update_search(&term);
                 Command::none()
             }
             Message::Search => {
                 // Implement the actual search logic here based on self.search_term
-                println!("Search for: {}", self.search_term());
+                println!(
+                    "Search {} {}: {}",
+                    self.search_kind(),
+                    self.search_mode(),
+                    self.search_term()
+                );
 
                 self.search_command()
             }
             Message::SearchKindChanged(kind) => {
                 self.current_search_kind = kind;
+                Command::none()
+            }
+            Message::SearchModeChanged(mode) => {
+                self.current_search_mode = mode;
                 Command::none()
             }
             Message::SearchCompleted(result) => {
@@ -171,7 +193,6 @@ impl Application for App {
                 }
                 Command::none()
             }
-            _ => Command::none(),
         }
     }
 
@@ -200,15 +221,26 @@ impl Application for App {
             .on_submit(Message::Search)
             .padding(10);
 
-        let pick_list = PickList::new(
+        let search_kind_pick_list = PickList::new(
             vec![SearchKind::Word, SearchKind::Author, SearchKind::Text],
             Some(self.current_search_kind),
             Message::SearchKindChanged,
         );
 
+        let search_mode_pick_list = PickList::new(
+            SearchMode::all_modes(),
+            Some(self.current_search_mode),
+            Message::SearchModeChanged,
+        );
+
+        let picklist_row = Row::new()
+            .spacing(10)
+            .push(search_kind_pick_list)
+            .push(search_mode_pick_list);
+
         Container::new(
             Column::new()
-                .push(padded_container(pick_list))
+                .push(padded_container(picklist_row))
                 .push(padded_container(result_counter).padding(side_padding))
                 .push(padded_container(input.padding(10)).width(fill))
                 .push(Scrollable::new(

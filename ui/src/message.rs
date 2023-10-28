@@ -1,4 +1,4 @@
-use crate::search::{SearchKind, SearchResult};
+use crate::search::{SearchKind, SearchMode, SearchResult};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -7,5 +7,6 @@ pub enum Message {
     InputChanged(String),
     Search,
     SearchKindChanged(SearchKind),
+    SearchModeChanged(SearchMode),
     SearchCompleted(SearchResult),
 }
