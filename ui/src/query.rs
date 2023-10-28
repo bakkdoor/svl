@@ -9,7 +9,7 @@ pub async fn search_authors(
 ) -> SearchResult {
     let (query, params) = search_mode.query("name", term);
     let script = format!(
-        "?[word] :=
+        "?[name, url] :=
             *Author {{ name, url }},
             {}",
         query
