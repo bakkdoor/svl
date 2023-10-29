@@ -9,4 +9,5 @@ pub enum Message {
     SearchKindChanged(SearchKind),
     SearchModeChanged(SearchMode),
     SearchCompleted(SearchResult),
+    CaseSensitiveChanged(bool),
 }

@@ -81,6 +81,7 @@ impl std::fmt::Display for SearchMode {
 pub struct SearchState<Result> {
     pub search_term: String,
     pub search_results: Vec<Result>,
+    pub is_case_sensitive: bool,
 }
 
 impl<Result> SearchState<Result> {
@@ -95,6 +96,10 @@ impl<Result> SearchState<Result> {
     pub fn update_search_results(&mut self, rows: Vec<Result>) {
         self.search_results = rows;
     }
+
+    pub fn update_case_sensitive(&mut self, is_case_sensitive: bool) {
+        self.is_case_sensitive = is_case_sensitive;
+    }
 }
 
 impl<Result> Default for SearchState<Result> {
@@ -102,6 +107,7 @@ impl<Result> Default for SearchState<Result> {
         Self {
             search_term: String::new(),
             search_results: Vec::new(),
+            is_case_sensitive: true,
         }
     }
 }

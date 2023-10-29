@@ -100,6 +100,22 @@ impl App {
         }
     }
 
+    fn update_case_sensitive(&mut self, is_case_sensitive: bool) {
+        match self.current_search_kind {
+            SearchKind::Author => self.author_search.update_case_sensitive(is_case_sensitive),
+            SearchKind::Text => self.text_search.update_case_sensitive(is_case_sensitive),
+            SearchKind::Word => self.word_search.update_case_sensitive(is_case_sensitive),
+        }
+    }
+
+    fn is_case_sensitive(&self) -> bool {
+        match self.current_search_kind {
+            SearchKind::Author => self.author_search.is_case_sensitive,
+            SearchKind::Text => self.text_search.is_case_sensitive,
+            SearchKind::Word => self.word_search.is_case_sensitive,
+        }
+    }
+
     fn search_command(&self) -> Command<Message> {
         let search_mode = self.current_search_mode;
         match self.current_search_kind {
@@ -193,6 +209,10 @@ impl Application for App {
                 }
                 Command::none()
             }
+            Message::CaseSensitiveChanged(is_case_sensitive) => {
+                self.update_case_sensitive(is_case_sensitive);
+                Command::none()
+            }
         }
     }
 
@@ -233,10 +253,18 @@ impl Application for App {
             Message::SearchModeChanged,
         );
 
+        // checkbox for case sensitive search
+        let case_sensitive_checkbox = iced::widget::checkbox::Checkbox::new(
+            "Case sensitive",
+            self.is_case_sensitive(),
+            Message::CaseSensitiveChanged,
+        );
+
         let picklist_row = Row::new()
             .spacing(10)
             .push(search_kind_pick_list)
-            .push(search_mode_pick_list);
+            .push(search_mode_pick_list)
+            .push(case_sensitive_checkbox);
 
         Container::new(
             Column::new()
