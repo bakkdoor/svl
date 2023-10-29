@@ -48,8 +48,7 @@ impl App {
     fn view_words(&self) -> Element<Message> {
         // list all words from search results
         self.word_search
-            .search_results
-            .iter()
+            .search_results_iter()
             .fold(Column::new(), |col, word| {
                 col.push(Text::new(word.to_string()))
             })
@@ -59,8 +58,7 @@ impl App {
     fn view_texts(&self) -> Element<Message> {
         // list all texts from search results
         self.text_search
-            .search_results
-            .iter()
+            .search_results_iter()
             .fold(Column::new(), |col, text| col.push(Text::new(&text.url)))
             .into()
     }
@@ -68,8 +66,7 @@ impl App {
     fn view_authors(&self) -> Element<Message> {
         // list all authors from search results
         self.author_search
-            .search_results
-            .iter()
+            .search_results_iter()
             .fold(Column::new(), |col, author| {
                 col.push(Text::new(&author.name))
             })
@@ -110,9 +107,9 @@ impl App {
 
     fn is_case_sensitive(&self) -> bool {
         match self.current_search_kind {
-            SearchKind::Author => self.author_search.is_case_sensitive,
-            SearchKind::Text => self.text_search.is_case_sensitive,
-            SearchKind::Word => self.word_search.is_case_sensitive,
+            SearchKind::Author => self.author_search.is_case_sensitive(),
+            SearchKind::Text => self.text_search.is_case_sensitive(),
+            SearchKind::Word => self.word_search.is_case_sensitive(),
         }
     }
 
@@ -222,9 +219,9 @@ impl Application for App {
         let result_counter = Text::new(format!(
             "Found {} results",
             match self.current_search_kind {
-                SearchKind::Author => self.author_search.search_results.len(),
-                SearchKind::Text => self.text_search.search_results.len(),
-                SearchKind::Word => self.word_search.search_results.len(),
+                SearchKind::Author => self.author_search.search_results_count(),
+                SearchKind::Text => self.text_search.search_results_count(),
+                SearchKind::Word => self.word_search.search_results_count(),
             }
         ));
 

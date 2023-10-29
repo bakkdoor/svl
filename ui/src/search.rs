@@ -79,18 +79,30 @@ impl std::fmt::Display for SearchMode {
 
 #[derive(Debug, Clone)]
 pub struct SearchState<Result> {
-    pub search_term: String,
-    pub search_results: Vec<Result>,
-    pub is_case_sensitive: bool,
+    search_term: String,
+    search_results: Vec<Result>,
+    is_case_sensitive: bool,
 }
 
 impl<Result> SearchState<Result> {
-    pub fn update_search(&mut self, term: &str) {
-        self.search_term = term.to_string();
-    }
-
     pub fn search_term(&self) -> String {
         self.search_term.clone()
+    }
+
+    pub fn search_results_iter(&self) -> impl Iterator<Item = &Result> {
+        self.search_results.iter()
+    }
+
+    pub fn search_results_count(&self) -> usize {
+        self.search_results.len()
+    }
+
+    pub fn is_case_sensitive(&self) -> bool {
+        self.is_case_sensitive
+    }
+
+    pub fn update_search(&mut self, term: &str) {
+        self.search_term = term.to_string();
     }
 
     pub fn update_search_results(&mut self, rows: Vec<Result>) {
