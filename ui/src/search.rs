@@ -222,40 +222,130 @@ impl SearchRows {
     }
 }
 
+type Row = Vec<svl_core::db::DataValue>;
+
+#[derive(Debug, Clone, Copy)]
+struct AuthorRowPositions {
+    name: usize,
+    url: usize,
+}
+
+fn decode_author(
+    row: &Row,
+    pos: AuthorRowPositions,
+    author_id: usize,
+) -> Result<svl_core::text::Author, SearchError> {
+    let name = row
+        .get(pos.name)
+        .ok_or(SearchError::missing_column("name"))?;
+    let name = name
+        .get_str()
+        .map(|s| s.to_string())
+        .ok_or(SearchError::invalid_type("name", ExpectedType::String))?;
+
+    let url = row.get(pos.url).ok_or(SearchError::missing_column("url"))?;
+    let url = url
+        .get_str()
+        .map(|s| s.to_string())
+        .ok_or(SearchError::invalid_type("url", ExpectedType::String))?;
+
+    let author = svl_core::text::Author {
+        author_id,
+        name,
+        url,
+    };
+
+    Ok(author)
+}
+
+fn add_authors(
+    authors: &mut Vec<svl_core::text::Author>,
+    rows: &[Row],
+    pos: AuthorRowPositions,
+) -> Result<(), SearchError> {
+    for (author_id, row) in rows.iter().enumerate() {
+        authors.push(decode_author(row, pos, author_id)?);
+    }
+    Ok(())
+}
+
 impl TryFrom<SearchRows> for Vec<svl_core::text::Author> {
     type Error = SearchError;
 
     fn try_from(sr: SearchRows) -> Result<Self, Self::Error> {
         let name = sr.position("name")?;
         let url = sr.position("url")?;
-        let rows = sr.rows;
+        let pos = AuthorRowPositions { name, url };
+        let mut rows = sr.rows;
 
         let mut authors = Vec::with_capacity(rows.rows.len());
 
-        for (author_id, row) in rows.rows.into_iter().enumerate() {
-            let name = row.get(name).ok_or(SearchError::missing_column("name"))?;
-            let name = name
-                .get_str()
-                .map(|s| s.to_string())
-                .ok_or(SearchError::invalid_type("name", ExpectedType::String))?;
+        add_authors(&mut authors, &rows.rows, pos)?;
 
-            let url = row.get(url).ok_or(SearchError::missing_column("url"))?;
-            let url = url
-                .get_str()
-                .map(|s| s.to_string())
-                .ok_or(SearchError::invalid_type("url", ExpectedType::String))?;
-
-            let author = svl_core::text::Author {
-                author_id,
-                name,
-                url,
-            };
-
-            authors.push(author);
+        while let Some(more) = rows.next {
+            add_authors(&mut authors, &more.rows, pos)?;
+            rows = *more;
         }
 
         Ok(authors)
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct TextRowPositions {
+    author_id: usize,
+    text: usize,
+    text_id: usize,
+    url: usize,
+}
+
+fn decode_text(row: &Row, pos: TextRowPositions) -> Result<svl_core::text::Text, SearchError> {
+    let id = row
+        .get(pos.text_id)
+        .and_then(|x| x.get_int())
+        .map(|i| i.into());
+
+    let text = row
+        .get(pos.text)
+        .ok_or(SearchError::missing_column("text"))?;
+    let text = text
+        .get_str()
+        .map(|x| x.to_string())
+        .ok_or(SearchError::invalid_type("text", ExpectedType::String))?;
+
+    let author_id = row
+        .get(pos.author_id)
+        .ok_or(SearchError::missing_column("author_id"))?;
+    let author_id = author_id
+        .get_int()
+        .map(|i| i as usize)
+        .ok_or(SearchError::invalid_type("author_id", ExpectedType::Usize))?;
+
+    let url = row.get(pos.url).ok_or(SearchError::missing_column("url"))?;
+    let url = url
+        .get_str()
+        .map(|x| x.to_string())
+        .ok_or(SearchError::invalid_type("url", ExpectedType::String))?;
+
+    let text = svl_core::text::Text {
+        id,
+        text,
+        author_id: Some(author_id),
+        url,
+    };
+
+    Ok(text)
+}
+
+fn add_texts(
+    texts: &mut Vec<svl_core::text::Text>,
+    rows: &[Row],
+    pos: TextRowPositions,
+) -> Result<(), SearchError> {
+    for row in rows.iter() {
+        texts.push(decode_text(row, pos)?);
+    }
+    Ok(())
 }
 
 impl TryFrom<SearchRows> for Vec<svl_core::text::Text> {
@@ -266,45 +356,53 @@ impl TryFrom<SearchRows> for Vec<svl_core::text::Text> {
         let text = sr.position("text")?;
         let text_id = sr.position("text_id")?;
         let url = sr.position("url")?;
-        let rows = sr.rows;
+        let pos = TextRowPositions {
+            author_id,
+            text,
+            text_id,
+            url,
+        };
+        let mut rows = sr.rows;
 
         let mut texts = Vec::with_capacity(rows.rows.len());
 
-        for row in rows.rows {
-            let id = row.get(text_id).and_then(|x| x.get_int()).map(|i| i.into());
+        add_texts(&mut texts, &rows.rows, pos)?;
 
-            let text = row.get(text).ok_or(SearchError::missing_column("text"))?;
-            let text = text
-                .get_str()
-                .map(|x| x.to_string())
-                .ok_or(SearchError::invalid_type("text", ExpectedType::String))?;
-
-            let author_id = row
-                .get(author_id)
-                .ok_or(SearchError::missing_column("author_id"))?;
-            let author_id = author_id
-                .get_int()
-                .map(|i| i as usize)
-                .ok_or(SearchError::invalid_type("author_id", ExpectedType::Usize))?;
-
-            let url = row.get(url).ok_or(SearchError::missing_column("url"))?;
-            let url = url
-                .get_str()
-                .map(|x| x.to_string())
-                .ok_or(SearchError::invalid_type("url", ExpectedType::String))?;
-
-            let t = svl_core::text::Text {
-                id,
-                text,
-                author_id: Some(author_id),
-                url,
-            };
-
-            texts.push(t);
+        while let Some(more) = rows.next {
+            add_texts(&mut texts, &more.rows, pos)?;
+            rows = *more;
         }
 
         Ok(texts)
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct WordRowPositions {
+    word: usize,
+}
+
+fn decode_word(row: &Row, pos: WordRowPositions) -> Result<svl_core::text::Word, SearchError> {
+    let word = row
+        .get(pos.word)
+        .ok_or(SearchError::missing_column("word"))?;
+    let word = word
+        .get_str()
+        .map(|s| s.to_string())
+        .ok_or(SearchError::invalid_type("word", ExpectedType::String))?;
+
+    Ok(word.into())
+}
+
+fn add_words(
+    words: &mut Vec<svl_core::text::Word>,
+    rows: &[Row],
+    pos: WordRowPositions,
+) -> Result<(), SearchError> {
+    for row in rows.iter() {
+        words.push(decode_word(row, pos)?);
+    }
+    Ok(())
 }
 
 impl TryFrom<SearchRows> for Vec<svl_core::text::Word> {
@@ -312,18 +410,16 @@ impl TryFrom<SearchRows> for Vec<svl_core::text::Word> {
 
     fn try_from(sr: SearchRows) -> Result<Self, Self::Error> {
         let word = sr.position("word")?;
-        let rows = sr.rows;
+        let pos = WordRowPositions { word };
+        let mut rows = sr.rows;
 
         let mut words = Vec::with_capacity(rows.rows.len());
 
-        for row in rows.rows {
-            let word = row.get(word).ok_or(SearchError::missing_column("word"))?;
-            let word = word
-                .get_str()
-                .map(|s| s.to_string())
-                .ok_or(SearchError::invalid_type("word", ExpectedType::String))?;
+        add_words(&mut words, &rows.rows, pos)?;
 
-            words.push(word.into());
+        while let Some(more) = rows.next {
+            add_words(&mut words, &more.rows, pos)?;
+            rows = *more;
         }
 
         Ok(words)

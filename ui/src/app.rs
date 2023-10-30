@@ -285,7 +285,7 @@ impl Application for App {
         let search_indicator = if self.is_searching() {
             padded_container(Text::new("Searching...")).padding(side_padding)
         } else {
-            Container::new(Text::new("")).padding(0).height(0).width(0)
+            empty_placeholder_container()
         };
 
         Container::new(
@@ -310,4 +310,8 @@ impl Application for App {
 
 fn padded_container<'a>(content: impl Into<Element<'a, Message>>) -> Container<'a, Message> {
     Container::new(content).padding(10)
+}
+
+fn empty_placeholder_container<'a>() -> Container<'a, Message> {
+    Container::new(Text::new("")).padding(0).height(0).width(0)
 }
