@@ -26,26 +26,70 @@ impl std::fmt::Display for SearchKind {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Search {
+    pub kind: SearchKind,
+    pub term: String,
+    pub mode: SearchMode,
+    pub is_case_sensitive: bool,
+}
+
+impl Search {
+    pub fn new(kind: SearchKind, term: String, mode: SearchMode, is_case_sensitive: bool) -> Self {
+        Self {
+            kind,
+            term,
+            mode,
+            is_case_sensitive,
+        }
+    }
+
+    pub fn query(&self, var: &str) -> SearchQuery {
+        let (var, term) = self.var_and_term(var);
+        let (code, params) = self.mode.query(var.as_str(), term);
+        SearchQuery {
+            kind: self.kind,
+            code,
+            params,
+        }
+    }
+
+    fn var_and_term(&self, var: &str) -> (String, String) {
+        if self.is_case_sensitive {
+            (var.to_string(), self.term.clone())
+        } else {
+            (format!("lowercase({})", var), self.term.to_lowercase())
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SearchQuery {
+    pub kind: SearchKind,
+    pub code: String,
+    pub params: DBParams,
+}
+
 pub type SearchModeQuery = (String, DBParams);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SearchMode {
-    #[default]
-    StartsWith,
-    EndsWith,
     Contains,
+    EndsWith,
     IsEqual,
     IsNotEqual,
+    #[default]
+    StartsWith,
 }
 
 impl SearchMode {
     pub fn all_modes() -> Vec<SearchMode> {
         vec![
-            SearchMode::StartsWith,
-            SearchMode::EndsWith,
             SearchMode::Contains,
+            SearchMode::EndsWith,
             SearchMode::IsEqual,
             SearchMode::IsNotEqual,
+            SearchMode::StartsWith,
         ]
     }
 }
@@ -53,11 +97,11 @@ impl SearchMode {
 impl SearchMode {
     pub fn query(&self, var: &str, term: String) -> SearchModeQuery {
         let func_name = match self {
-            SearchMode::StartsWith => "starts_with",
-            SearchMode::EndsWith => "ends_with",
             SearchMode::Contains => "str_includes",
+            SearchMode::EndsWith => "ends_with",
             SearchMode::IsEqual => "eq",
             SearchMode::IsNotEqual => "neq",
+            SearchMode::StartsWith => "starts_with",
         };
         let code = format!("{}({}, $term)", func_name, var);
         let params = DBParams::from_iter(vec![("term".into(), term.into())]);
@@ -68,25 +112,34 @@ impl SearchMode {
 impl std::fmt::Display for SearchMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SearchMode::StartsWith => write!(f, "starts with"),
-            SearchMode::EndsWith => write!(f, "ends with"),
             SearchMode::Contains => write!(f, "contains"),
+            SearchMode::EndsWith => write!(f, "ends with"),
             SearchMode::IsEqual => write!(f, "is equal to"),
             SearchMode::IsNotEqual => write!(f, "is not equal to"),
+            SearchMode::StartsWith => write!(f, "starts with"),
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct SearchState<Result> {
+    active_searches: Vec<Search>,
+    is_case_sensitive: bool,
     search_term: String,
     search_results: Vec<Result>,
-    is_case_sensitive: bool,
 }
 
 impl<Result> SearchState<Result> {
     pub fn search_term(&self) -> String {
         self.search_term.clone()
+    }
+
+    pub fn started_search(&mut self, search: Search) {
+        self.active_searches.push(search);
+    }
+
+    pub fn ended_search(&mut self, search: &Search) {
+        self.active_searches.retain(|s| s != search);
     }
 
     pub fn search_results_iter(&self) -> impl Iterator<Item = &Result> {
@@ -112,14 +165,19 @@ impl<Result> SearchState<Result> {
     pub fn update_case_sensitive(&mut self, is_case_sensitive: bool) {
         self.is_case_sensitive = is_case_sensitive;
     }
+
+    pub fn is_searching(&self) -> bool {
+        !self.active_searches.is_empty()
+    }
 }
 
 impl<Result> Default for SearchState<Result> {
     fn default() -> Self {
         Self {
+            active_searches: Vec::new(),
+            is_case_sensitive: true,
             search_term: String::new(),
             search_results: Vec::new(),
-            is_case_sensitive: true,
         }
     }
 }
@@ -134,22 +192,25 @@ impl From<DBError> for SearchError {
 
 #[derive(Debug, Clone)]
 pub struct SearchRows {
-    kind: SearchKind,
+    search: Search,
     rows: NamedRows,
 }
 
-#[allow(dead_code)]
 impl SearchRows {
-    pub fn new(kind: SearchKind, rows: NamedRows) -> Self {
-        Self { kind, rows }
+    pub fn new(search: Search, rows: NamedRows) -> Self {
+        Self { search, rows }
+    }
+
+    pub fn search(&self) -> &Search {
+        &self.search
     }
 
     pub fn rows(&self) -> &NamedRows {
         &self.rows
     }
 
-    pub fn kind(&self) -> SearchKind {
-        self.kind
+    pub fn kind(&self) -> &SearchKind {
+        &self.search.kind
     }
 
     pub fn position(&self, column: &str) -> Result<usize, SearchError> {

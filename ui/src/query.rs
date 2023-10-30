@@ -1,44 +1,40 @@
-use crate::search::{SearchKind, SearchMode, SearchResult, SearchRows};
+use crate::search::{Search, SearchResult, SearchRows};
 use svl_core::db::DBConnection;
 
 #[allow(dead_code)]
-pub async fn search_authors(
-    db: DBConnection,
-    term: String,
-    search_mode: SearchMode,
-) -> SearchResult {
-    let (query, params) = search_mode.query("name", term);
+pub async fn search_authors(db: DBConnection, search: Search) -> SearchResult {
+    let query = search.query("name");
     let script = format!(
         "?[name, url] :=
             *Author {{ name, url }},
             {}",
-        query
+        query.code
     );
-    let rows = db.run_immutable(&script, params).await?;
-    Ok(SearchRows::new(SearchKind::Author, rows))
+    let rows = db.run_immutable(&script, query.params).await?;
+    Ok(SearchRows::new(search, rows))
 }
 
-pub async fn search_words(db: DBConnection, term: String, search_mode: SearchMode) -> SearchResult {
-    let (query, params) = search_mode.query("word", term);
+pub async fn search_words(db: DBConnection, search: Search) -> SearchResult {
+    let query = search.query("word");
     let script = format!(
         "?[word] :=
             *Word {{ word }},
             {}",
-        query
+        query.code
     );
-    let rows = db.run_immutable(&script, params).await?;
-    Ok(SearchRows::new(SearchKind::Word, rows))
+    let rows = db.run_immutable(&script, query.params).await?;
+    Ok(SearchRows::new(search, rows))
 }
 
-pub async fn search_texts(db: DBConnection, term: String, search_mode: SearchMode) -> SearchResult {
-    let (query, params) = search_mode.query("word", term);
+pub async fn search_texts(db: DBConnection, search: Search) -> SearchResult {
+    let query = search.query("word");
     let script = format!(
         "?[text_id, url, text, author_id] :=
             *Text {{ text_id, url, text, author_id }},
             *Word {{ word, text_id }},
             {}",
-        query
+        query.code
     );
-    let rows = db.run_immutable(&script, params).await?;
-    Ok(SearchRows::new(SearchKind::Text, rows))
+    let rows = db.run_immutable(&script, query.params).await?;
+    Ok(SearchRows::new(search, rows))
 }

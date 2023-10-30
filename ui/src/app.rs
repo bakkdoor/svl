@@ -9,7 +9,7 @@ use crate::{
     errors::SearchError,
     message::Message,
     query,
-    search::{SearchKind, SearchMode, SearchResult, SearchState},
+    search::{Search, SearchKind, SearchMode, SearchResult, SearchState},
 };
 
 pub struct App {
@@ -81,6 +81,14 @@ impl App {
         }
     }
 
+    fn is_searching(&self) -> bool {
+        match self.current_search_kind {
+            SearchKind::Author => self.author_search.is_searching(),
+            SearchKind::Text => self.text_search.is_searching(),
+            SearchKind::Word => self.word_search.is_searching(),
+        }
+    }
+
     fn search_kind(&self) -> SearchKind {
         self.current_search_kind
     }
@@ -113,25 +121,33 @@ impl App {
         }
     }
 
-    fn search_command(&self) -> Command<Message> {
-        let search_mode = self.current_search_mode;
-        match self.current_search_kind {
+    fn current_search(&self) -> Search {
+        Search::new(
+            self.current_search_kind,
+            self.search_term(),
+            self.search_mode(),
+            self.is_case_sensitive(),
+        )
+    }
+
+    fn search_command(&mut self) -> Command<Message> {
+        let db = self.db.clone();
+        let search = self.current_search();
+
+        match search.kind {
             SearchKind::Author => {
-                let term = self.author_search.search_term();
-                let db = self.db.clone();
-                let task = query::search_authors(db, term, search_mode);
+                self.author_search.started_search(search.clone());
+                let task = query::search_authors(db, search);
                 Command::perform(task, Message::SearchCompleted)
             }
             SearchKind::Text => {
-                let term = self.word_search.search_term();
-                let db = self.db.clone();
-                let task = query::search_texts(db, term, search_mode);
+                self.text_search.started_search(search.clone());
+                let task = query::search_texts(db, search);
                 Command::perform(task, Message::SearchCompleted)
             }
             SearchKind::Word => {
-                let term = self.word_search.search_term();
-                let db = self.db.clone();
-                let task = query::search_words(db, term, search_mode);
+                self.word_search.started_search(search.clone());
+                let task = query::search_words(db, search);
                 Command::perform(task, Message::SearchCompleted)
             }
         }
@@ -142,12 +158,15 @@ impl App {
             Ok(rows) => {
                 match rows.kind() {
                     SearchKind::Author => {
+                        self.author_search.ended_search(rows.search());
                         self.author_search.update_search_results(rows.try_into()?);
                     }
                     SearchKind::Text => {
+                        self.text_search.ended_search(rows.search());
                         self.text_search.update_search_results(rows.try_into()?);
                     }
                     SearchKind::Word => {
+                        self.word_search.ended_search(rows.search());
                         self.word_search.update_search_results(rows.try_into()?);
                     }
                 }
@@ -263,11 +282,18 @@ impl Application for App {
             .push(search_mode_pick_list)
             .push(case_sensitive_checkbox);
 
+        let search_indicator = if self.is_searching() {
+            padded_container(Text::new("Searching...")).padding(side_padding)
+        } else {
+            Container::new(Text::new("")).padding(0).height(0).width(0)
+        };
+
         Container::new(
             Column::new()
                 .push(padded_container(picklist_row))
                 .push(padded_container(result_counter).padding(side_padding))
                 .push(padded_container(input.padding(10)).width(fill))
+                .push(search_indicator)
                 .push(Scrollable::new(
                     padded_container(self.view_search_kind()).width(fill),
                 )),
