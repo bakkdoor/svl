@@ -20,20 +20,20 @@ pub enum SearchError {
 
 #[derive(Debug, Clone, Copy)]
 pub enum ExpectedType {
-    String,
-    Integer,
-    Float,
     Boolean,
+    Float,
+    Integer,
+    String,
     Usize,
 }
 
 impl Display for ExpectedType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ExpectedType::String => write!(f, "String"),
-            ExpectedType::Integer => write!(f, "Integer"),
-            ExpectedType::Float => write!(f, "Float"),
             ExpectedType::Boolean => write!(f, "Boolean"),
+            ExpectedType::Float => write!(f, "Float"),
+            ExpectedType::Integer => write!(f, "Integer"),
+            ExpectedType::String => write!(f, "String"),
             ExpectedType::Usize => write!(f, "Usize"),
         }
     }
