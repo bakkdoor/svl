@@ -113,7 +113,7 @@ impl App {
         }
     }
 
-    fn is_case_sensitive(&self) -> bool {
+    const fn is_case_sensitive(&self) -> bool {
         match self.current_search_kind {
             SearchKind::Author => self.author_search.is_case_sensitive(),
             SearchKind::Text => self.text_search.is_case_sensitive(),

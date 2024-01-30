@@ -150,7 +150,7 @@ impl<Result> SearchState<Result> {
         self.search_results.len()
     }
 
-    pub fn is_case_sensitive(&self) -> bool {
+    pub const fn is_case_sensitive(&self) -> bool {
         self.is_case_sensitive
     }
 
@@ -197,19 +197,19 @@ pub struct SearchRows {
 }
 
 impl SearchRows {
-    pub fn new(search: Search, rows: NamedRows) -> Self {
+    pub const fn new(search: Search, rows: NamedRows) -> Self {
         Self { search, rows }
     }
 
-    pub fn search(&self) -> &Search {
+    pub const fn search(&self) -> &Search {
         &self.search
     }
 
-    pub fn rows(&self) -> &NamedRows {
+    pub const fn rows(&self) -> &NamedRows {
         &self.rows
     }
 
-    pub fn kind(&self) -> &SearchKind {
+    pub const fn kind(&self) -> &SearchKind {
         &self.search.kind
     }
 
