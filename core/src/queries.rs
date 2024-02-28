@@ -130,8 +130,9 @@ impl Query {
                 top_words_ending_with(db, suffix, limit).await
             }
             "texts" => {
-                if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                if args.len() < 2 {
+                    let limit = args.get(0).and_then(|a| a.parse::<usize>().ok());
+                    return texts_info(db, limit).await;
                 }
                 let prefix = args.get(0).unwrap();
                 let limit = args.optional_at(1);
@@ -272,6 +273,7 @@ pub fn print_help() -> QueryResult {
                 "/texts <prefix> ?<limit>".into(),
                 "Get texts with words starting with prefix".into(),
             ],
+            vec!["/texts ?<limit>".into(), "Get all texts".into()],
             vec![
                 "/ends <suffix> ?<limit>".into(),
                 "Get words ending with suffix".into(),
@@ -466,6 +468,21 @@ pub async fn text_info(db: &DBConnection, text_id: TextId, limit: Option<usize>)
             text_length = length(text)
         "#,
         vec![("text_id".into(), text_id.to_data_value())],
+        limit,
+    );
+
+    run_query(db, &query, params).await
+}
+
+pub async fn texts_info(db: &DBConnection, limit: Option<usize>) -> QueryResult {
+    let (query, params) = query_with_optional_limit(
+        r#"
+        ?[text_id, author_name, url, text_length] :=
+            *Author{author_id, name: author_name},
+            *Text{text_id, url, text, author_id},
+            text_length = length(text)
+        "#,
+        vec![],
         limit,
     );
 
