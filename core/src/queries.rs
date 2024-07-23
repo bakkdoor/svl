@@ -15,7 +15,7 @@ pub enum QueryError {
     UnknownQuery(String),
 
     #[error("Missing args for {0}: {1} expected but only {2} provided")]
-    MissingArgs(String, usize, usize),
+    MissingArgs(QueryCommand, usize, usize),
 
     #[error("Empty query")]
     EmptyQuery,
@@ -37,14 +37,86 @@ impl From<DBError> for QueryError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Query {
-    pub cmd: String,
+    pub cmd: QueryCommand,
     pub args: Args,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum QueryCommand {
+    Help,
+    Top,
+    TopEnds,
+    Texts,
+    Ends,
+    EndsTexts,
+    Contains,
+    ContainsTexts,
+    CountTexts,
+    CountAuthors,
+    CountWords,
+    Word,
+    Text,
+    Author,
+    Quit,
+    Exit,
+    Clear,
+    Unknown(String),
+}
+
+impl From<&str> for QueryCommand {
+    fn from(cmd: &str) -> Self {
+        match cmd {
+            "help" => QueryCommand::Help,
+            "top" => QueryCommand::Top,
+            "top-ends" => QueryCommand::TopEnds,
+            "texts" => QueryCommand::Texts,
+            "ends" => QueryCommand::Ends,
+            "ends-texts" => QueryCommand::EndsTexts,
+            "contains" => QueryCommand::Contains,
+            "contains-texts" => QueryCommand::ContainsTexts,
+            "count-texts" => QueryCommand::CountTexts,
+            "count-authors" => QueryCommand::CountAuthors,
+            "count-words" => QueryCommand::CountWords,
+            "word" => QueryCommand::Word,
+            "text" => QueryCommand::Text,
+            "author" => QueryCommand::Author,
+            "quit" => QueryCommand::Quit,
+            "exit" => QueryCommand::Exit,
+            "clear" => QueryCommand::Clear,
+            _ => QueryCommand::Unknown(cmd.into()),
+        }
+    }
+}
+
+impl std::fmt::Display for QueryCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            QueryCommand::Help => write!(f, "help"),
+            QueryCommand::Top => write!(f, "top"),
+            QueryCommand::TopEnds => write!(f, "top-ends"),
+            QueryCommand::Texts => write!(f, "texts"),
+            QueryCommand::Ends => write!(f, "ends"),
+            QueryCommand::EndsTexts => write!(f, "ends-texts"),
+            QueryCommand::Contains => write!(f, "contains"),
+            QueryCommand::ContainsTexts => write!(f, "contains-texts"),
+            QueryCommand::CountTexts => write!(f, "count-texts"),
+            QueryCommand::CountAuthors => write!(f, "count-authors"),
+            QueryCommand::CountWords => write!(f, "count-words"),
+            QueryCommand::Word => write!(f, "word"),
+            QueryCommand::Text => write!(f, "text"),
+            QueryCommand::Author => write!(f, "author"),
+            QueryCommand::Quit => write!(f, "quit"),
+            QueryCommand::Exit => write!(f, "exit"),
+            QueryCommand::Clear => write!(f, "clear"),
+            QueryCommand::Unknown(cmd) => write!(f, "{}", cmd),
+        }
+    }
 }
 
 impl Query {
     pub fn new(cmd: String, args: Vec<String>) -> Self {
         Self {
-            cmd,
+            cmd: QueryCommand::from(cmd.as_str()),
             args: Args { args },
         }
     }
@@ -103,33 +175,31 @@ impl Query {
             return Err(QueryError::MissingCommand);
         }
 
-        Ok(Self { cmd, args })
+        Ok(Self::new(cmd, args.args))
     }
 
     pub async fn eval(&self, db: &DBConnection) -> QueryResult {
         let Query { cmd, args } = self;
-        let cmd_str = cmd.as_str();
-        let cmd = cmd.clone();
 
-        match cmd_str {
-            "help" => print_help(),
-            "top" => {
+        match cmd {
+            QueryCommand::Help => print_help(),
+            QueryCommand::Top => {
                 if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                    return Err(QueryError::MissingArgs(cmd.clone(), 1, args.len()));
                 }
                 let prefix = args.get(0).expect("Expected a prefix argument");
                 let limit = args.optional_at(1);
                 top_words_starting_with(db, prefix, limit).await
             }
-            "top-ends" => {
+            QueryCommand::TopEnds => {
                 if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                    return Err(QueryError::MissingArgs(cmd.clone(), 1, args.len()));
                 }
                 let suffix = args.get(0).expect("Expected a suffix argument");
                 let limit = args.optional_at(1);
                 top_words_ending_with(db, suffix, limit).await
             }
-            "texts" => {
+            QueryCommand::Texts => {
                 if args.len() < 2 {
                     let limit = args.get(0).and_then(|a| a.parse::<usize>().ok());
                     return texts_info(db, limit).await;
@@ -138,46 +208,49 @@ impl Query {
                 let limit = args.optional_at(1);
                 texts_with_word_starting_with(db, prefix, limit).await
             }
-            "ends" => {
+            QueryCommand::Ends => {
                 if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                    return Err(QueryError::MissingArgs(cmd.clone(), 1, args.len()));
                 }
                 let suffix = args.get(0).expect("Expected a suffix argument");
                 let limit = args.optional_at(1);
                 words_ending_with(db, suffix, limit).await
             }
-            "ends-texts" => {
+            QueryCommand::EndsTexts => {
                 if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                    return Err(QueryError::MissingArgs(cmd.clone(), 1, args.len()));
                 }
                 let suffix = args.get(0).expect("Expected a suffix argument");
                 let limit = args.optional_at(1);
                 texts_with_word_ending_with(db, suffix, limit).await
             }
-            "contains" => {
+            QueryCommand::Contains => {
                 if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                    return Err(QueryError::MissingArgs(cmd.clone(), 1, args.len()));
                 }
                 let substring = args.get(0).expect("Expected a substring argument");
                 let limit = args.optional_at(1);
                 words_containing(db, substring, limit).await
             }
-            "contains-texts" => {
+            QueryCommand::ContainsTexts => {
                 if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                    return Err(QueryError::MissingArgs(
+                        "contains-texts".into(),
+                        1,
+                        args.len(),
+                    ));
                 }
                 let substring = args.get(0).expect("Expected a substring argument");
                 let limit = args.optional_at(1);
                 texts_containing(db, substring, limit).await
             }
-            // the remaining queries are also very useful:
-            "count-texts" => {
+            QueryCommand::CountTexts => {
                 run_query(db, "?[count(text_id)] := *Text{text_id}", DBParams::new()).await
             }
-            "count-authors" => {
+            QueryCommand::CountAuthors => {
                 run_query(db, "?[count(name)] := *Author{name}", DBParams::new()).await
             }
-            "count-words" => {
+            QueryCommand::CountWords => {
                 run_query(
                     db,
                     "?[count(word), count_unique(word)] := *Word{word}",
@@ -185,16 +258,16 @@ impl Query {
                 )
                 .await
             }
-            "word" => {
+            QueryCommand::Word => {
                 if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                    return Err(QueryError::MissingArgs(cmd.clone(), 1, args.len()));
                 }
                 let word = args.get(0).expect("Expected a word argument");
                 word_info(db, word, args.optional_at(1)).await
             }
-            "text" => {
+            QueryCommand::Text => {
                 if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                    return Err(QueryError::MissingArgs(cmd.clone(), 1, args.len()));
                 }
                 let text_id = TextId::from(
                     args.get(0)
@@ -204,20 +277,19 @@ impl Query {
                 );
                 text_info(db, text_id, args.optional_at(1)).await
             }
-            "author" => {
+            QueryCommand::Author => {
                 if args.is_empty() {
-                    return Err(QueryError::MissingArgs(cmd, 1, args.len()));
+                    return Err(QueryError::MissingArgs(cmd.clone(), 1, args.len()));
                 }
                 let name = args.get(0).expect("Expected a name argument");
                 author_info(db, name, args.optional_at(1)).await
             }
-            "quit" | "exit" => std::process::exit(0),
-            "clear" => {
+            QueryCommand::Quit | QueryCommand::Exit => std::process::exit(0),
+            QueryCommand::Clear => {
                 print!("\x1B[2J\x1B[1;1H");
                 Ok(NamedRows::new(Vec::new(), Vec::new()))
             }
-            // catch-all for unknown queries
-            _ => Err(QueryError::UnknownQuery(cmd)),
+            QueryCommand::Unknown(cmd) => Err(QueryError::UnknownQuery(cmd.clone())),
         }
     }
 }
