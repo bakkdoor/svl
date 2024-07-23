@@ -117,7 +117,7 @@ impl Query {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
-                let prefix = args.get(0).unwrap();
+                let prefix = args.get(0).expect("Expected a prefix argument");
                 let limit = args.optional_at(1);
                 top_words_starting_with(db, prefix, limit).await
             }
@@ -125,7 +125,7 @@ impl Query {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
-                let suffix = args.get(0).unwrap();
+                let suffix = args.get(0).expect("Expected a suffix argument");
                 let limit = args.optional_at(1);
                 top_words_ending_with(db, suffix, limit).await
             }
@@ -134,7 +134,7 @@ impl Query {
                     let limit = args.get(0).and_then(|a| a.parse::<usize>().ok());
                     return texts_info(db, limit).await;
                 }
-                let prefix = args.get(0).unwrap();
+                let prefix = args.get(0).expect("Expected a prefix argument");
                 let limit = args.optional_at(1);
                 texts_with_word_starting_with(db, prefix, limit).await
             }
@@ -142,7 +142,7 @@ impl Query {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
-                let suffix = args.get(0).unwrap();
+                let suffix = args.get(0).expect("Expected a suffix argument");
                 let limit = args.optional_at(1);
                 words_ending_with(db, suffix, limit).await
             }
@@ -150,7 +150,7 @@ impl Query {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
-                let suffix = args.get(0).unwrap();
+                let suffix = args.get(0).expect("Expected a suffix argument");
                 let limit = args.optional_at(1);
                 texts_with_word_ending_with(db, suffix, limit).await
             }
@@ -158,7 +158,7 @@ impl Query {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
-                let substring = args.get(0).unwrap();
+                let substring = args.get(0).expect("Expected a substring argument");
                 let limit = args.optional_at(1);
                 words_containing(db, substring, limit).await
             }
@@ -166,7 +166,7 @@ impl Query {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
-                let substring = args.get(0).unwrap();
+                let substring = args.get(0).expect("Expected a substring argument");
                 let limit = args.optional_at(1);
                 texts_containing(db, substring, limit).await
             }
@@ -189,21 +189,26 @@ impl Query {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
-                let word = args.get(0).unwrap();
+                let word = args.get(0).expect("Expected a word argument");
                 word_info(db, word, args.optional_at(1)).await
             }
             "text" => {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
-                let text_id = TextId::from(args.get(0).unwrap().parse::<usize>().unwrap());
+                let text_id = TextId::from(
+                    args.get(0)
+                        .expect("Expected a text_id argument")
+                        .parse::<usize>()
+                        .expect("Expected a valid usize for text_id"),
+                );
                 text_info(db, text_id, args.optional_at(1)).await
             }
             "author" => {
                 if args.is_empty() {
                     return Err(QueryError::MissingArgs(cmd, 1, args.len()));
                 }
-                let name = args.get(0).unwrap();
+                let name = args.get(0).expect("Expected a name argument");
                 author_info(db, name, args.optional_at(1)).await
             }
             "quit" | "exit" => std::process::exit(0),
