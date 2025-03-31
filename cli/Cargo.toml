@@ -13,7 +13,7 @@ cozo.workspace = true
 dirs = "*"
 prettytable-rs = "*"
 rustyline = "13.0.0"
-rustyline-derive = "0.10.0"
+rustyline-derive = "0.11.0"
 svl-core = { path = "../core" }
 svl-ui = { path = "../ui" }
 thiserror.workspace = true
