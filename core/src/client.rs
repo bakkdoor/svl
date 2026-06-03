@@ -35,6 +35,8 @@ impl HttpStatsClient {
     }
 
     pub async fn fetch_text(&self, text_url: &str) -> crate::Result<Text> {
+        println!("Fetching {}", text_url);
+
         let _permit = self.semaphore.acquire().await?;
         let text = self.client.get(text_url).send().await?.text().await?;
         let body_selector = scraper::Selector::parse("body").unwrap();

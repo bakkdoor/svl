@@ -157,7 +157,6 @@ async fn fetch_and_store_stats(db: &DBConnection) -> Result<(), Box<dyn Error>> 
 
     for (author_id, author) in authors.iter().enumerate() {
         for text_info in &author.texts {
-            println!("Fetching {}", text_info.url);
             text_futures.push((author_id, client.fetch_text(&text_info.url)));
         }
     }
