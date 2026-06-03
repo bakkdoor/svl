@@ -37,7 +37,7 @@ impl App {
         }
     }
 
-    fn view_search_kind(&self) -> Element<Message> {
+    fn view_search_kind(&self) -> Element<'_, Message> {
         match self.current_search_kind {
             SearchKind::Author => self.view_authors(),
             SearchKind::Text => self.view_texts(),
@@ -45,7 +45,7 @@ impl App {
         }
     }
 
-    fn view_words(&self) -> Element<Message> {
+    fn view_words(&self) -> Element<'_, Message> {
         // list all words from search results
         self.word_search
             .search_results_iter()
@@ -55,7 +55,7 @@ impl App {
             .into()
     }
 
-    fn view_texts(&self) -> Element<Message> {
+    fn view_texts(&self) -> Element<'_, Message> {
         // list all texts from search results
         self.text_search
             .search_results_iter()
@@ -63,7 +63,7 @@ impl App {
             .into()
     }
 
-    fn view_authors(&self) -> Element<Message> {
+    fn view_authors(&self) -> Element<'_, Message> {
         // list all authors from search results
         self.author_search
             .search_results_iter()
@@ -232,7 +232,7 @@ impl Application for App {
         }
     }
 
-    fn view(&self) -> Element<Self::Message> {
+    fn view(&self) -> Element<'_, Self::Message> {
         let search_term: String = self.search_term();
 
         let result_counter = Text::new(format!(
