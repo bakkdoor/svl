@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use reqwest::header;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::text::Text;
@@ -15,7 +16,18 @@ impl HttpStatsClient {
     const MAX_CONCURRENT_REQUESTS: usize = 25;
 
     pub fn new() -> crate::Result<Self> {
-        let client = reqwest::Client::builder().https_only(true).build()?;
+        let mut default_headers = header::HeaderMap::new();
+        // fake USER_AGENT header to prevent WAF detection and blocking
+        default_headers.insert(
+            header::USER_AGENT,
+            header::HeaderValue::from_static(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
+            ),
+        );
+        let client = reqwest::Client::builder()
+            .https_only(true)
+            .default_headers(default_headers)
+            .build()?;
         // allow max of MAX_CONCURRENT_REQUESTS concurrent requests using this http client pool
         let semaphore = Arc::new(tokio::sync::Semaphore::new(Self::MAX_CONCURRENT_REQUESTS));
 
